@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代步車借出登記系統</title>
+    <!-- 引入 LINE LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .form-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #2563eb;
+            animation: spin 1s linear infinite;
+        }
+        .readonly-input {
+            background-color: #f9fafb;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-md">
+        <!-- 載入中遮罩 -->
+        <div id="loading-overlay" class="text-center py-10">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-500">正在安全連線 LINE 系統...</p>
+        </div>
+
+        <!-- 表單主要內容 (驗證成功後才顯示) -->
+        <div id="form-container" class="form-card p-8 hidden">
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-bold text-gray-800">代步車登記系統</h1>
+                <p class="text-gray-500 mt-2">請確認資訊並完成登記</p>
+            </div>
+
+            <form id="reservationForm" class="space-y-5">
+                <!-- 隱藏的使用者 ID -->
+                <input type="hidden" id="lineUserId" name="lineUserId">
+
+                <!-- 1. 登記日期 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">登記日期</label>
+                    <input type="text" id="todayDate" name="todayDate" readonly
+                        class="w-full px-4 py-3 rounded-lg border border-gray-200 readonly-input outline-none">
+                </div>
+
+                <!-- 2. 原車車牌 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">您的車牌號碼 (原車)</label>
+                    <input type="text" id="customerPlate" name="customerPlate" required
+                        placeholder="例如: ABC-1234"
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all uppercase">
+                </div>
+
+                <!-- 3. 代步車車牌 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">借出之代步車車牌</label>
+                    <input type="text" id="loanerPlate" name="loanerPlate" required
+                        placeholder="例如: EB2-567"
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all uppercase">
+                </div>
+
+                <!-- 4. 店家選擇 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">取車店家</label>
+                    <select id="storeName" name="storeName" required
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white">
+                        <option value="" disabled selected>請選擇店家</option>
+                        <option value="金旺昇">金旺昇</option>
+                        <option value="忍店">忍店</option>
+                        <option value="金力盛">金力盛</option>
+                    </select>
+                </div>
+
+                <!-- 提交按鈕 -->
+                <button type="submit" id="submitBtn"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 flex justify-center items-center mt-4">
+                    <span>確認送出</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- 成功回饋畫面 -->
+        <div id="success-container" class="form-card p-8 text-center hidden">
+            <div class="mb-4 flex justify-center">
+                <div class="bg-green-100 p-3 rounded-full">
+                    <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">登記成功！</h2>
+            <p class="text-gray-600 mb-6">資料已成功傳送，請點擊下方按鈕回到 LINE 聊天室。</p>
+            <button onclick="liff.closeWindow()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-md">
+                關閉並返回
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 設定區：已經填入您的 LIFF ID 與 Make Webhook
+        const MY_LIFF_ID = '2009551033-j7lWjkjJ'; 
+        const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/qdlgd8r67hh42uxq99z1cjmw2tp3neyq';
+
+        // 初始化 LIFF 函式
+        async function initializeLiff() {
+            try {
+                // 初始化 LIFF SDK
+                await liff.init({ liffId: MY_LIFF_ID });
+                
+                // 檢查是否已在 LINE 登入
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    // 將自動抓到的 userId 存入隱藏欄位
+                    document.getElementById('lineUserId').value = profile.userId;
+                    setupForm();
+                } else {
+                    // 若未登入，強制導向 LINE 登入畫面
+                    liff.login();
+                }
+            } catch (err) {
+                console.error('LIFF 初始化失敗', err);
+                document.getElementById('loading-overlay').innerHTML = `
+                    <div class="p-4 bg-red-50 text-red-600 rounded-lg">
+                        <p class="font-bold">連線失敗</p>
+                        <p class="text-sm">請在 LINE App 內開啟此網址，或檢查 LIFF ID 是否正確。</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 設定表單初始資訊 (日期與顯示表單)
+        function setupForm() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+            document.getElementById('form-container').classList.remove('hidden');
+            
+            // 自動生成今日日期 (YYYY-MM-DD)
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            document.getElementById('todayDate').value = dateStr;
+        }
+
+        // 啟動流程：當視窗載入完成即執行 LIFF 初始化
+        window.onload = initializeLiff;
+
+        // 表單提交處理
+        const form = document.getElementById('reservationForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const originalContent = btn.innerHTML;
+            
+            // 按鈕進入載入中狀態 (防止重複點擊)
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loading-spinner"></div>';
+
+            // 準備發送到 Make.com 的 JSON 資料
+            const payload = {
+                userId: document.getElementById('lineUserId').value,
+                date: document.getElementById('todayDate').value,
+                customerPlate: document.getElementById('customerPlate').value.trim().toUpperCase(),
+                loanerPlate: document.getElementById('loanerPlate').value.trim().toUpperCase(),
+                storeName: document.getElementById('storeName').value,
+                submittedAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })
+            };
+
+            try {
+                // 發送到 Make.com Webhook
+                const response = await fetch(MAKE_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    // 成功後隱藏表單，顯示成功訊息
+                    document.getElementById('form-container').classList.add('hidden');
+                    document.getElementById('success-container').classList.remove('hidden');
+                } else {
+                    throw new Error('Webhook Error');
+                }
+            } catch (error) {
+                alert('系統傳送失敗，請確認網路連線或稍後再試。');
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
+        });
+    </script>
+</body>
+</html>
