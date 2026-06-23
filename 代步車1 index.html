@@ -34,35 +34,58 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        /* 確認事項勾選樣式 */
+        .agree-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1.5px solid #e5e7eb;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .agree-item:has(input:checked) {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+        }
+        .agree-item input[type="checkbox"] {
+            margin-top: 2px;
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            accent-color: #2563eb;
+            cursor: pointer;
+        }
+        .agree-item label {
+            font-size: 0.85rem;
+            color: #374151;
+            line-height: 1.55;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
-
     <div id="app" class="w-full max-w-md">
         <!-- 載入中遮罩 -->
         <div id="loading-overlay" class="text-center py-10">
             <div class="loading-spinner mx-auto mb-4"></div>
             <p class="text-gray-500">正在安全連線 LINE 系統...</p>
         </div>
-
         <!-- 表單主要內容 (驗證成功後才顯示) -->
         <div id="form-container" class="form-card p-8 hidden">
             <div class="text-center mb-8">
                 <h1 class="text-2xl font-bold text-gray-800">代步車登記系統</h1>
                 <p class="text-gray-500 mt-2">請確認資訊並完成登記</p>
             </div>
-
             <form id="reservationForm" class="space-y-5">
                 <!-- 隱藏的使用者 ID -->
                 <input type="hidden" id="lineUserId" name="lineUserId">
-
                 <!-- 1. 登記日期 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">登記日期</label>
                     <input type="text" id="todayDate" name="todayDate" readonly
                         class="w-full px-4 py-3 rounded-lg border border-gray-200 readonly-input outline-none">
                 </div>
-
                 <!-- 2. 原車車牌 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">您的車牌號碼 (原車)</label>
@@ -70,7 +93,6 @@
                         placeholder="例如: ABC-1234"
                         class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all uppercase">
                 </div>
-
                 <!-- 3. 代步車車牌 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">借出之代步車車牌</label>
@@ -78,7 +100,6 @@
                         placeholder="例如: EB2-567"
                         class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all uppercase">
                 </div>
-
                 <!-- 4. 店家選擇 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">取車店家</label>
@@ -91,14 +112,75 @@
                     </select>
                 </div>
 
+                <!-- ===== 確認事項 ===== -->
+                <div class="pt-2">
+                    <p class="text-sm font-bold text-gray-700 mb-3">請直接詳讀以下內容並完成打勾確認：</p>
+                    <div class="space-y-2">
+
+                        <div class="agree-item">
+                            <input type="checkbox" id="agree1" name="agree1" required>
+                            <label for="agree1">1. 我已確認本人持有有效機車駕照，且駕照未遭吊扣、吊銷或註銷。</label>
+                        </div>
+
+                        <div class="agree-item">
+                            <input type="checkbox" id="agree2" name="agree2" required>
+                            <label for="agree2">2. 本人目前意識清醒，未飲酒、未施用毒品、藥物或其他足以影響安全駕駛之物品。</label>
+                        </div>
+
+                        <div class="agree-item">
+                            <input type="checkbox" id="agree3" name="agree3" required>
+                            <label for="agree3">3. 本人確認借用代步車期間，僅限本人親自騎乘使用，不得轉借、交由他人騎乘或提供無照者使用。</label>
+                        </div>
+
+                        <div class="agree-item">
+                            <input type="checkbox" id="agree4" name="agree4" required>
+                            <label for="agree4">4. 借用期間如有違規、事故、罰單、扣點、毒駕、酒駕、拖吊、保管、車損、第三人損害等責任，均由本人自行負責，與出借車輛之車行無關。</label>
+                        </div>
+
+                        <div class="agree-item">
+                            <input type="checkbox" id="agree5" name="agree5" required>
+                            <label for="agree5">5. 若有罰單移轉、事故處理、警方調查、保險理賠或相關行政程序需求，本人願配合提供身分資料、駕照資料及相關文件。</label>
+                        </div>
+
+                        <div class="agree-item">
+                            <input type="checkbox" id="agree6" name="agree6" required>
+                            <label for="agree6">6. 本人借用前已確認代步車外觀與基本車況，若有異常應於借用前主動告知店家；借用後產生之新增損壞，應由本人負責。</label>
+                        </div>
+
+                        <div class="agree-item">
+                            <input type="checkbox" id="agree7" name="agree7" required>
+                            <label for="agree7">7. 本人應遵守交通法規，並依正常方式使用代步車，不得競速、改裝、載運危險物品、超載、違規停放或從事非一般代步用途。</label>
+                        </div>
+
+                        <div class="agree-item">
+                            <input type="checkbox" id="agree8" name="agree8" required>
+                            <label for="agree8">8. 本人應妥善保管代步車鑰匙與車輛，若有遺失、失竊、毀損或其他損害，願負擔相關修復、補發、拖吊或處理費用。</label>
+                        </div>
+
+                        <div class="agree-item">
+                            <input type="checkbox" id="agree9" name="agree9" required>
+                            <label for="agree9">9. 本人同意於約定時間內歸還代步車，若逾期未還，願配合店家聯繫並負擔因此產生之相關費用或損害。</label>
+                        </div>
+
+                        <div class="agree-item">
+                            <input type="checkbox" id="agree10" name="agree10" required>
+                            <label for="agree10">10. 本人已上傳駕照正面照片，並確認所提供資料均為本人真實資料，若有不實，願自負相關法律責任。</label>
+                        </div>
+
+                    </div>
+                    <p class="text-xs text-gray-500 mt-3 leading-relaxed">
+                        本人已詳閱並同意以上代步車借用規範。請勾選確認後並上傳本人駕照，即表示本人同意上述內容。
+                    </p>
+                </div>
+                <!-- ===== 確認事項結束 ===== -->
+
                 <!-- 提交按鈕 -->
                 <button type="submit" id="submitBtn"
                     class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 flex justify-center items-center mt-4">
-                    <span>確認送出</span>
+                    <span>我同意並送出代步車借用登記</span>
                 </button>
             </form>
         </div>
-
         <!-- 成功回饋畫面 -->
         <div id="success-container" class="form-card p-8 text-center hidden">
             <div class="mb-4 flex justify-center">
@@ -115,18 +197,16 @@
             </button>
         </div>
     </div>
-
     <script>
         // 設定區：已經填入您的 LIFF ID 與 Make Webhook
-        const MY_LIFF_ID = '2009551033-j7lWjkjJ'; 
+        const MY_LIFF_ID = '2009551033-j7lWjkjJ';
         const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/qdlgd8r67hh42uxq99z1cjmw2tp3neyq';
-
         // 初始化 LIFF 函式
         async function initializeLiff() {
             try {
                 // 初始化 LIFF SDK
                 await liff.init({ liffId: MY_LIFF_ID });
-                
+
                 // 檢查是否已在 LINE 登入
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
@@ -147,32 +227,37 @@
                 `;
             }
         }
-
         // 設定表單初始資訊 (日期與顯示表單)
         function setupForm() {
             document.getElementById('loading-overlay').classList.add('hidden');
             document.getElementById('form-container').classList.remove('hidden');
-            
+
             // 自動生成今日日期 (YYYY-MM-DD)
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
             document.getElementById('todayDate').value = dateStr;
         }
-
         // 啟動流程：當視窗載入完成即執行 LIFF 初始化
         window.onload = initializeLiff;
-
         // 表單提交處理
         const form = document.getElementById('reservationForm');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            // 驗證 10 項是否全部打勾
+            const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            if (!allChecked) {
+                alert('⚠️ 請確認所有條款均已勾選後再送出。');
+                return;
+            }
+
             const btn = document.getElementById('submitBtn');
             const originalContent = btn.innerHTML;
-            
+
             // 按鈕進入載入中狀態 (防止重複點擊)
             btn.disabled = true;
             btn.innerHTML = '<div class="loading-spinner"></div>';
-
             // 準備發送到 Make.com 的 JSON 資料
             const payload = {
                 userId: document.getElementById('lineUserId').value,
@@ -180,9 +265,9 @@
                 customerPlate: document.getElementById('customerPlate').value.trim().toUpperCase(),
                 loanerPlate: document.getElementById('loanerPlate').value.trim().toUpperCase(),
                 storeName: document.getElementById('storeName').value,
-                submittedAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })
+                submittedAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+                agreementConfirmed: true
             };
-
             try {
                 // 發送到 Make.com Webhook
                 const response = await fetch(MAKE_WEBHOOK_URL, {
@@ -190,7 +275,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
                 if (response.ok) {
                     // 成功後隱藏表單，顯示成功訊息
                     document.getElementById('form-container').classList.add('hidden');
