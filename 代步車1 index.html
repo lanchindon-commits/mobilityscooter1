@@ -266,7 +266,20 @@
                 loanerPlate: document.getElementById('loanerPlate').value.trim().toUpperCase(),
                 storeName: document.getElementById('storeName').value,
                 submittedAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-                agreementConfirmed: true
+                agreementConfirmed: true,
+                // 10 項確認條款個別勾選狀態
+                agreements: {
+                    agree1: document.getElementById('agree1').checked,  // 持有有效駕照
+                    agree2: document.getElementById('agree2').checked,  // 意識清醒未飲酒毒品
+                    agree3: document.getElementById('agree3').checked,  // 僅本人騎乘不得轉借
+                    agree4: document.getElementById('agree4').checked,  // 違規事故責任自負
+                    agree5: document.getElementById('agree5').checked,  // 配合提供資料
+                    agree6: document.getElementById('agree6').checked,  // 借用前確認車況
+                    agree7: document.getElementById('agree7').checked,  // 遵守交通法規
+                    agree8: document.getElementById('agree8').checked,  // 妥善保管鑰匙車輛
+                    agree9: document.getElementById('agree9').checked,  // 按時歸還
+                    agree10: document.getElementById('agree10').checked // 已上傳駕照資料屬實
+                }
             };
             try {
                 // 發送到 Make.com Webhook
