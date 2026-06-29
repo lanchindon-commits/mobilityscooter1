@@ -539,21 +539,29 @@
             };
             try {
                 // 發送到主 Webhook（包含 PDF base64）
+                const payloadStr = JSON.stringify(payload);
+                console.log('[DEBUG] 傳送資料大小:', Math.round(payloadStr.length / 1024), 'KB');
                 const response = await fetch(MAKE_WEBHOOK_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: payloadStr
                 });
-
+                console.log('[DEBUG] 回應狀態:', response.status);
                 if (response.ok) {
                     // 成功後隱藏表單，顯示成功訊息
                     document.getElementById('form-container').classList.add('hidden');
                     document.getElementById('success-container').classList.remove('hidden');
                 } else {
-                    throw new Error('Webhook Error');
+                    const respText = await response.text().catch(() => '');
+                    console.error('[DEBUG] 錯誤內容:', respText);
+                    alert('傳送失敗 (HTTP ' + response.status + ')。\n' + respText.substring(0, 150));
+                    btn.disabled = false;
+                    btn.innerHTML = originalContent;
                 }
             } catch (error) {
-                alert('系統傳送失敗，請確認網路連線或稍後再試。');
+                console.error('[DEBUG] fetch 例外:', error);
+                const size = Math.round(JSON.stringify(payload).length / 1024);
+                alert('網路錯誤：' + error.message + '\n資料大小：' + size + ' KB');
                 btn.disabled = false;
                 btn.innerHTML = originalContent;
             }
