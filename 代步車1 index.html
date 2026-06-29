@@ -357,20 +357,17 @@
 
             document.body.appendChild(el);
             try {
-                const canvas = await html2canvas(el, { scale: 1.5, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
+                const canvas = await html2canvas(el, { scale: 1.2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
                 const pageW = pdf.internal.pageSize.getWidth();
                 const pageH = pdf.internal.pageSize.getHeight();
-                const imgH = canvas.height * pageW / canvas.width;
-                const imgData = canvas.toDataURL('image/jpeg', 0.85);
-                let yPos = 0, page = 0;
-                while (yPos < imgH) {
-                    if (page > 0) pdf.addPage();
-                    pdf.addImage(imgData, 'JPEG', 0, -yPos, pageW, imgH);
-                    yPos += pageH;
-                    page++;
-                }
+                const imgData = canvas.toDataURL('image/jpeg', 0.82);
+                // 縮放至一頁（等比例）
+                const ratio = Math.min(pageW / canvas.width, pageH / canvas.height);
+                const scaledW = canvas.width * ratio;
+                const scaledH = canvas.height * ratio;
+                pdf.addImage(imgData, 'JPEG', 0, 0, scaledW, scaledH);
                 // 回傳純 base64（去掉 data URI 前綴）
                 return pdf.output('datauristring').split(',')[1];
             } finally {
