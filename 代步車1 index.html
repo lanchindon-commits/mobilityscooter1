@@ -263,7 +263,6 @@
         // 設定區：已經填入您的 LIFF ID 與 Make Webhook
         const MY_LIFF_ID = '2009551033-j7lWjkjJ';
         const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/qdlgd8r67hh42uxq99z1cjmw2tp3neyq';
-        const PDF_WEBHOOK_URL  = 'https://hook.us2.make.com/sr5bhmjwgssir29z2iyy2jr44hri8qcu';
         // 初始化 LIFF 函式
         async function initializeLiff() {
             try {
@@ -539,31 +538,12 @@
                 }
             };
             try {
-                // 同時發送到兩個 Webhook（主流程 + PDF合約流程）
-                const mainPayload = { ...payload };
-                delete mainPayload.pdfBase64; // 主 Webhook 不需要 PDF 資料
-
-                const pdfPayload = {
-                    userId:         payload.userId,
-                    pdfBase64:      pdfBase64,
-                    storeName:      payload.storeName,
-                    date:           payload.date,
-                    customerPlate:  payload.customerPlate,
-                    loanerPlate:    payload.loanerPlate
-                };
-
-                const [response] = await Promise.all([
-                    fetch(MAKE_WEBHOOK_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(mainPayload)
-                    }),
-                    pdfBase64 ? fetch(PDF_WEBHOOK_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(pdfPayload)
-                    }) : Promise.resolve({ ok: true })
-                ]);
+                // 發送到主 Webhook（包含 PDF base64）
+                const response = await fetch(MAKE_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
                 if (response.ok) {
                     // 成功後隱藏表單，顯示成功訊息
