@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>代步車借出登記系統</title>
-    <!-- 引入 LINE LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body {
             background-color: #f3f4f6;
@@ -36,83 +33,64 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* 簽名 Canvas */
-        #signatureCanvas {
+
+        /* 拍照上傳區塊 */
+        #photo-upload-area {
             border: 2px dashed #d1d5db;
-            border-radius: 8px;
-            cursor: crosshair;
-            touch-action: none;
-            background: #fafafa;
-            display: block;
-            width: 100%;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background-color 0.2s;
         }
-        #signatureCanvas.signed {
-            border-color: #2563eb;
-            border-style: solid;
-            background: #fff;
-        }
-        /* 駕照預覽 */
-        #licensePreview {
-            display: none;
-            width: 100%;
-            border-radius: 8px;
-            border: 2px solid #2563eb;
-            margin-top: 8px;
-            max-height: 200px;
-            object-fit: cover;
-        }
-        /* 確認事項勾選樣式 */
-        .agree-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1.5px solid #e5e7eb;
-            transition: border-color 0.2s, background 0.2s;
-        }
-        .agree-item:has(input:checked) {
+        #photo-upload-area:hover {
             border-color: #2563eb;
             background-color: #eff6ff;
         }
-        .agree-item input[type="checkbox"] {
-            margin-top: 2px;
-            width: 18px;
-            height: 18px;
-            flex-shrink: 0;
-            accent-color: #2563eb;
-            cursor: pointer;
+        #photo-upload-area.has-image {
+            border-color: #16a34a;
+            background-color: #f0fdf4;
+            padding: 0.5rem;
         }
-        .agree-item label {
-            font-size: 0.85rem;
-            color: #374151;
-            line-height: 1.55;
-            cursor: pointer;
+        #photoInput {
+            display: none;
+        }
+        #preview-img {
+            max-height: 200px;
+            border-radius: 0.5rem;
+            margin: 0 auto;
+            display: none;
+        }
+        #upload-placeholder {
+            pointer-events: none;
         }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
     <div id="app" class="w-full max-w-md">
+
         <!-- 載入中遮罩 -->
         <div id="loading-overlay" class="text-center py-10">
             <div class="loading-spinner mx-auto mb-4"></div>
             <p class="text-gray-500">正在安全連線 LINE 系統...</p>
         </div>
-        <!-- 表單主要內容 (驗證成功後才顯示) -->
+
+        <!-- 表單主要內容 -->
         <div id="form-container" class="form-card p-8 hidden">
             <div class="text-center mb-8">
                 <h1 class="text-2xl font-bold text-gray-800">代步車登記系統</h1>
                 <p class="text-gray-500 mt-2">請確認資訊並完成登記</p>
             </div>
             <form id="reservationForm" class="space-y-5">
-                <!-- 隱藏的使用者 ID -->
                 <input type="hidden" id="lineUserId" name="lineUserId">
+
                 <!-- 1. 登記日期 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">登記日期</label>
                     <input type="text" id="todayDate" name="todayDate" readonly
                         class="w-full px-4 py-3 rounded-lg border border-gray-200 readonly-input outline-none">
                 </div>
+
                 <!-- 2. 原車車牌 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">您的車牌號碼 (原車)</label>
@@ -120,6 +98,7 @@
                         placeholder="例如: ABC-1234"
                         class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all uppercase">
                 </div>
+
                 <!-- 3. 代步車車牌 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">借出之代步車車牌</label>
@@ -127,6 +106,7 @@
                         placeholder="例如: EB2-567"
                         class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all uppercase">
                 </div>
+
                 <!-- 4. 店家選擇 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">取車店家</label>
@@ -139,110 +119,44 @@
                     </select>
                 </div>
 
-                <!-- ===== 確認事項 ===== -->
-                <div class="pt-2">
-                    <p class="text-sm font-bold text-gray-700 mb-3">請直接詳讀以下內容並完成打勾確認：</p>
-                    <div class="space-y-2">
-
-                        <div class="agree-item">
-                            <input type="checkbox" id="agree1" name="agree1" required>
-                            <label for="agree1">1. 我已確認本人持有有效機車駕照，且駕照未遭吊扣、吊銷或註銷。</label>
-                        </div>
-
-                        <div class="agree-item">
-                            <input type="checkbox" id="agree2" name="agree2" required>
-                            <label for="agree2">2. 本人目前意識清醒，未飲酒、未施用毒品、藥物或其他足以影響安全駕駛之物品。</label>
-                        </div>
-
-                        <div class="agree-item">
-                            <input type="checkbox" id="agree3" name="agree3" required>
-                            <label for="agree3">3. 本人確認借用代步車期間，僅限本人親自騎乘使用，不得轉借、交由他人騎乘或提供無照者使用。</label>
-                        </div>
-
-                        <div class="agree-item">
-                            <input type="checkbox" id="agree4" name="agree4" required>
-                            <label for="agree4">4. 借用期間如有違規、事故、罰單、扣點、毒駕、酒駕、拖吊、保管、車損、第三人損害等責任，均由本人自行負責，與出借車輛之車行無關。</label>
-                        </div>
-
-                        <div class="agree-item">
-                            <input type="checkbox" id="agree5" name="agree5" required>
-                            <label for="agree5">5. 若有罰單移轉、事故處理、警方調查、保險理賠或相關行政程序需求，本人願配合提供身分資料、駕照資料及相關文件。</label>
-                        </div>
-
-                        <div class="agree-item">
-                            <input type="checkbox" id="agree6" name="agree6" required>
-                            <label for="agree6">6. 本人借用前已確認代步車外觀與基本車況，若有異常應於借用前主動告知店家；借用後產生之新增損壞，應由本人負責。</label>
-                        </div>
-
-                        <div class="agree-item">
-                            <input type="checkbox" id="agree7" name="agree7" required>
-                            <label for="agree7">7. 本人應遵守交通法規，並依正常方式使用代步車，不得競速、改裝、載運危險物品、超載、違規停放或從事非一般代步用途。</label>
-                        </div>
-
-                        <div class="agree-item">
-                            <input type="checkbox" id="agree8" name="agree8" required>
-                            <label for="agree8">8. 本人應妥善保管代步車鑰匙與車輛，若有遺失、失竊、毀損或其他損害，願負擔相關修復、補發、拖吊或處理費用。</label>
-                        </div>
-
-                        <div class="agree-item">
-                            <input type="checkbox" id="agree9" name="agree9" required>
-                            <label for="agree9">9. 本人同意於約定時間內歸還代步車，若逾期未還，願配合店家聯繫並負擔因此產生之相關費用或損害。</label>
-                        </div>
-
-                        <div class="agree-item">
-                            <input type="checkbox" id="agree10" name="agree10" required>
-                            <label for="agree10">10. 本人已上傳駕照正面照片，並確認所提供資料均為本人真實資料，若有不實，願自負相關法律責任。</label>
-                        </div>
-
-                    </div>
-                    <p class="text-xs text-gray-500 mt-3 leading-relaxed">
-                        本人已詳閱並同意以上代步車借用規範。請勾選確認後並上傳本人駕照，即表示本人同意上述內容。
-                    </p>
-                </div>
-                <!-- ===== 確認事項結束 ===== -->
-
-                <!-- ===== 駕照上傳 ===== -->
-                <div class="pt-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        📷 上傳駕照正面照片 <span class="text-red-500">*</span>
+                <!-- 5. 證件拍照上傳 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        證件照片
+                        <span class="text-red-500">*</span>
                     </label>
-                    <label for="licenseInput"
-                        class="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all">
-                        <svg class="w-8 h-8 text-gray-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <!-- 隱私說明 -->
+                    <div class="flex items-start gap-2 mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                        <svg class="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                         </svg>
-                        <span id="licenseLabel" class="text-sm text-gray-500">點擊拍照或選擇圖片</span>
-                    </label>
-                    <input type="file" id="licenseInput" accept="image/*" capture="environment" class="hidden">
-                    <img id="licensePreview" alt="駕照預覽">
-                </div>
-                <!-- ===== 駕照上傳結束 ===== -->
-
-                <!-- ===== 簽名欄位 ===== -->
-                <div class="pt-2">
-                    <div class="flex justify-between items-center mb-2">
-                        <label class="block text-sm font-medium text-gray-700">
-                            ✍️ 本人簽名 <span class="text-red-500">*</span>
-                        </label>
-                        <button type="button" id="clearSignBtn"
-                            class="text-xs text-gray-400 hover:text-red-500 underline transition-colors">
-                            清除重簽
-                        </button>
+                        <p class="text-xs text-amber-700">請拍攝<strong>駕照</strong>或<strong>健保卡</strong>，僅用於借用代步車之身份確認，完成後即刪除。</p>
                     </div>
-                    <canvas id="signatureCanvas" height="160"></canvas>
-                    <p class="text-xs text-gray-400 mt-1">請用手指或滑鼠在上方框內簽名</p>
+                    <!-- 拍照區域 -->
+                    <div id="photo-upload-area" onclick="document.getElementById('photoInput').click()">
+                        <div id="upload-placeholder">
+                            <svg class="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            <p class="text-sm text-gray-500 font-medium">點此拍照或選取圖片</p>
+                            <p class="text-xs text-gray-400 mt-1">支援相機拍攝 / 相簿選取</p>
+                        </div>
+                        <img id="preview-img" src="" alt="證件預覽">
+                    </div>
+                    <!-- 隱藏的 file input，accept 同時允許相機拍攝與相簿 -->
+                    <input type="file" id="photoInput" accept="image/*" capture="environment">
+                    <p id="photo-error" class="text-xs text-red-500 mt-1 hidden">請上傳證件照片</p>
                 </div>
-                <!-- ===== 簽名欄位結束 ===== -->
 
                 <!-- 提交按鈕 -->
                 <button type="submit" id="submitBtn"
                     class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 flex justify-center items-center mt-4">
-                    <span>我同意並送出代步車借用登記</span>
+                    <span>確認送出</span>
                 </button>
             </form>
         </div>
+
         <!-- 成功回饋畫面 -->
         <div id="success-container" class="form-card p-8 text-center hidden">
             <div class="mb-4 flex justify-center">
@@ -253,30 +167,28 @@
                 </div>
             </div>
             <h2 class="text-2xl font-bold text-gray-800 mb-2">登記成功！</h2>
-            <p class="text-gray-600 mb-6">資料已成功傳送，請點擊下方按鈕回到 LINE 聊天室。</p>
+            <p class="text-gray-600 mb-6">資料已成功傳送，LINE 聊天室已收到確認訊息。</p>
             <button onclick="liff.closeWindow()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-md">
                 關閉並返回
             </button>
         </div>
     </div>
+
     <script>
-        // 設定區：已經填入您的 LIFF ID 與 Make Webhook
         const MY_LIFF_ID = '2009551033-j7lWjkjJ';
         const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/qdlgd8r67hh42uxq99z1cjmw2tp3neyq';
-        // 初始化 LIFF 函式
+
+        let photoBase64 = null; // 儲存 raw base64（不含 data URL 前綴）
+
+        // ── LIFF 初始化 ──
         async function initializeLiff() {
             try {
-                // 初始化 LIFF SDK
                 await liff.init({ liffId: MY_LIFF_ID });
-
-                // 檢查是否已在 LINE 登入
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
-                    // 將自動抓到的 userId 存入隱藏欄位
                     document.getElementById('lineUserId').value = profile.userId;
                     setupForm();
                 } else {
-                    // 若未登入，強制導向 LINE 登入畫面
                     liff.login();
                 }
             } catch (err) {
@@ -289,280 +201,232 @@
                 `;
             }
         }
-        // ===== PDF 合約生成 =====
-        async function compressImage(src, maxWidth, quality) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => {
-                    const ratio = Math.min(maxWidth / img.width, 1);
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width * ratio;
-                    canvas.height = img.height * ratio;
-                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
-                };
-                img.onerror = () => resolve(src);
-                img.src = src;
-            });
-        }
 
-        async function generateContractPDF(data) {
-            const compressedLicense = await compressImage(data.licensePhoto, 500, 0.65);
-            const clauses = [
-                '我已確認本人持有有效機車駕照，且駕照未遭吊扣、吊銷或註銷。',
-                '本人目前意識清醒，未飲酒、未施用毒品、藥物或其他足以影響安全駕駛之物品。',
-                '本人確認借用代步車期間，僅限本人親自騎乘使用，不得轉借、交由他人騎乘或提供無照者使用。',
-                '借用期間如有違規、事故、罰單、扣點、毒駕、酒駕、拖吊、保管、車損、第三人損害等責任，均由本人自行負責，與出借車輛之車行無關。',
-                '若有罰單移轉、事故處理、警方調查、保險理賠或相關行政程序需求，本人願配合提供身分資料、駕照資料及相關文件。',
-                '本人借用前已確認代步車外觀與基本車況，若有異常應於借用前主動告知店家；借用後產生之新增損壞，應由本人負責。',
-                '本人應遵守交通法規，並依正常方式使用代步車，不得競速、改裝、載運危險物品、超載、違規停放或從事非一般代步用途。',
-                '本人應妥善保管代步車鑰匙與車輛，若有遺失、失竊、毀損或其他損害，願負擔相關修復、補發、拖吊或處理費用。',
-                '本人同意於約定時間內歸還代步車，若逾期未還，願配合店家聯繫並負擔因此產生之相關費用或損害。',
-                '本人已上傳駕照正面照片，並確認所提供資料均為本人真實資料，若有不實，願自負相關法律責任。'
-            ];
-
-            const el = document.createElement('div');
-            el.style.cssText = 'position:fixed;top:-9999px;left:0;width:720px;padding:52px;background:white;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif;';
-            el.innerHTML = `
-                <div style="text-align:center;border-bottom:3px solid #1e3a8a;padding-bottom:20px;margin-bottom:24px;">
-                    <div style="font-size:26px;font-weight:bold;color:#1e3a8a;">${data.storeName}</div>
-                    <div style="font-size:15px;color:#4b5563;margin-top:6px;letter-spacing:2px;">代步車借出合約書</div>
-                </div>
-                <table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:14px;">
-                    <tr><td style="padding:9px 14px;background:#f3f4f6;border:1px solid #d1d5db;font-weight:bold;width:33%;">登記日期</td><td style="padding:9px 14px;border:1px solid #d1d5db;">${data.date}</td></tr>
-                    <tr><td style="padding:9px 14px;background:#f3f4f6;border:1px solid #d1d5db;font-weight:bold;">客戶車牌（原車）</td><td style="padding:9px 14px;border:1px solid #d1d5db;">${data.customerPlate}</td></tr>
-                    <tr><td style="padding:9px 14px;background:#f3f4f6;border:1px solid #d1d5db;font-weight:bold;">借出代步車車牌</td><td style="padding:9px 14px;border:1px solid #d1d5db;">${data.loanerPlate}</td></tr>
-                </table>
-                <div style="margin-bottom:24px;">
-                    <div style="font-size:15px;font-weight:bold;color:#1e3a8a;border-bottom:1px solid #e5e7eb;padding-bottom:8px;margin-bottom:14px;">借用條款確認（本人已逐條詳閱並同意）</div>
-                    ${clauses.map((c, i) => `
-                    <div style="display:flex;gap:8px;margin-bottom:8px;font-size:12.5px;line-height:1.65;align-items:flex-start;">
-                        <span style="color:#16a34a;font-weight:bold;flex-shrink:0;">✓</span>
-                        <span>${i + 1}. ${c}</span>
-                    </div>`).join('')}
-                </div>
-                <div style="display:flex;gap:24px;margin-bottom:24px;">
-                    <div style="flex:1;">
-                        <div style="font-size:13px;font-weight:bold;margin-bottom:8px;color:#374151;">駕照正面</div>
-                        <img src="${compressedLicense}" style="width:100%;height:155px;object-fit:cover;border:1px solid #d1d5db;border-radius:6px;">
-                    </div>
-                    <div style="flex:1;">
-                        <div style="font-size:13px;font-weight:bold;margin-bottom:8px;color:#374151;">本人簽名</div>
-                        <img src="${data.signature}" style="width:100%;height:155px;object-fit:contain;border:1px solid #d1d5db;border-radius:6px;background:#fafafa;">
-                    </div>
-                </div>
-                <div style="border-top:1px solid #e5e7eb;padding-top:14px;text-align:center;font-size:12px;color:#6b7280;">
-                    本人已詳閱並同意以上代步車借用規範，並確認所有資料均為本人真實資料。
-                </div>`;
-
-            document.body.appendChild(el);
-            try {
-                const canvas = await html2canvas(el, { scale: 1.2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
-                const pageW = pdf.internal.pageSize.getWidth();
-                const pageH = pdf.internal.pageSize.getHeight();
-                const imgData = canvas.toDataURL('image/jpeg', 0.82);
-                // 縮放至一頁（等比例）
-                const ratio = Math.min(pageW / canvas.width, pageH / canvas.height);
-                const scaledW = canvas.width * ratio;
-                const scaledH = canvas.height * ratio;
-                pdf.addImage(imgData, 'JPEG', 0, 0, scaledW, scaledH);
-                // 回傳純 base64（去掉 data URI 前綴）
-                return pdf.output('datauristring').split(',')[1];
-            } finally {
-                document.body.removeChild(el);
-            }
-        }
-
-        // ===== 簽名 Canvas 邏輯 =====
-        let signatureCanvas, signCtx, isSigning = false, hasSigned = false;
-        let licenseBase64 = '';
-
-        function initSignature() {
-            signatureCanvas = document.getElementById('signatureCanvas');
-            // 設定 canvas 實際像素大小
-            signatureCanvas.width = signatureCanvas.offsetWidth * window.devicePixelRatio;
-            signatureCanvas.height = 160 * window.devicePixelRatio;
-            signCtx = signatureCanvas.getContext('2d');
-            signCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            signCtx.strokeStyle = '#1e3a8a';
-            signCtx.lineWidth = 2.5;
-            signCtx.lineCap = 'round';
-            signCtx.lineJoin = 'round';
-
-            function getPos(e) {
-                const rect = signatureCanvas.getBoundingClientRect();
-                const src = e.touches ? e.touches[0] : e;
-                return { x: src.clientX - rect.left, y: src.clientY - rect.top };
-            }
-            function startDraw(e) {
-                e.preventDefault();
-                isSigning = true;
-                const p = getPos(e);
-                signCtx.beginPath();
-                signCtx.moveTo(p.x, p.y);
-            }
-            function draw(e) {
-                e.preventDefault();
-                if (!isSigning) return;
-                const p = getPos(e);
-                signCtx.lineTo(p.x, p.y);
-                signCtx.stroke();
-                hasSigned = true;
-                signatureCanvas.classList.add('signed');
-            }
-            function endDraw(e) { e.preventDefault(); isSigning = false; }
-
-            signatureCanvas.addEventListener('mousedown', startDraw);
-            signatureCanvas.addEventListener('mousemove', draw);
-            signatureCanvas.addEventListener('mouseup', endDraw);
-            signatureCanvas.addEventListener('touchstart', startDraw, { passive: false });
-            signatureCanvas.addEventListener('touchmove', draw, { passive: false });
-            signatureCanvas.addEventListener('touchend', endDraw, { passive: false });
-
-            document.getElementById('clearSignBtn').addEventListener('click', () => {
-                signCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
-                hasSigned = false;
-                signatureCanvas.classList.remove('signed');
-            });
-        }
-
-        // ===== 駕照上傳邏輯 =====
-        function initLicenseUpload() {
-            const input = document.getElementById('licenseInput');
-            const preview = document.getElementById('licensePreview');
-            const label = document.getElementById('licenseLabel');
-
-            input.addEventListener('change', () => {
-                const file = input.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    licenseBase64 = e.target.result; // 含 data:image/...;base64,
-                    preview.src = licenseBase64;
-                    preview.style.display = 'block';
-                    label.textContent = '✅ ' + file.name;
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // 設定表單初始資訊 (日期與顯示表單)
         function setupForm() {
             document.getElementById('loading-overlay').classList.add('hidden');
             document.getElementById('form-container').classList.remove('hidden');
-
-            // 自動生成今日日期 (YYYY-MM-DD)
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
             document.getElementById('todayDate').value = dateStr;
-
-            initSignature();
-            initLicenseUpload();
         }
-        // 啟動流程：當視窗載入完成即執行 LIFF 初始化
-        window.onload = initializeLiff;
-        // 表單提交處理
+
+        // ── 圖片選取 & 預覽 ──
+        document.getElementById('photoInput').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // 壓縮圖片再轉 base64
+            compressAndConvert(file, (base64) => {
+                // 去掉 data:image/...;base64, 前綴，Make.com toBinary() 需要純 base64
+                photoBase64 = base64.split(',')[1];
+                const previewImg = document.getElementById('preview-img');
+                const placeholder = document.getElementById('upload-placeholder');
+                const uploadArea = document.getElementById('photo-upload-area');
+
+                previewImg.src = base64;
+                previewImg.style.display = 'block';
+                placeholder.style.display = 'none';
+                uploadArea.classList.add('has-image');
+                document.getElementById('photo-error').classList.add('hidden');
+            });
+        });
+
+        // 壓縮圖片到最大 1200px，品質 0.75，降低傳輸大小
+        function compressAndConvert(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = new Image();
+                img.onload = function () {
+                    const MAX_SIZE = 1200;
+                    let w = img.width, h = img.height;
+                    if (w > MAX_SIZE || h > MAX_SIZE) {
+                        if (w > h) { h = Math.round(h * MAX_SIZE / w); w = MAX_SIZE; }
+                        else { w = Math.round(w * MAX_SIZE / h); h = MAX_SIZE; }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    callback(canvas.toDataURL('image/jpeg', 0.75));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ── 表單提交 ──
         const form = document.getElementById('reservationForm');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // 驗證 10 項是否全部打勾
-            const checkboxes = form.querySelectorAll('input[type="checkbox"]');
-            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-            if (!allChecked) {
-                alert('⚠️ 請確認所有條款均已勾選後再送出。');
-                return;
-            }
-            // 驗證駕照是否上傳
-            if (!licenseBase64) {
-                alert('⚠️ 請上傳駕照正面照片。');
-                return;
-            }
-            // 驗證簽名是否完成
-            if (!hasSigned) {
-                alert('⚠️ 請在簽名欄位完成簽名。');
+            // 驗證照片
+            if (!photoBase64) {
+                document.getElementById('photo-error').classList.remove('hidden');
+                document.getElementById('photo-upload-area').scrollIntoView({ behavior: 'smooth' });
                 return;
             }
 
             const btn = document.getElementById('submitBtn');
             const originalContent = btn.innerHTML;
-
-            // 按鈕進入載入中狀態 (防止重複點擊)
             btn.disabled = true;
-            btn.innerHTML = '<div class="loading-spinner" style="border-left-color:white;margin-right:10px;"></div><span>正在生成合約 PDF...</span>';
+            btn.innerHTML = '<div class="loading-spinner" style="width:24px;height:24px;border-width:3px;"></div>';
 
-            // 生成 PDF
-            let pdfBase64 = '';
-            try {
-                pdfBase64 = await generateContractPDF({
-                    storeName: document.getElementById('storeName').value,
-                    date: document.getElementById('todayDate').value,
-                    customerPlate: document.getElementById('customerPlate').value.trim().toUpperCase(),
-                    loanerPlate: document.getElementById('loanerPlate').value.trim().toUpperCase(),
-                    licensePhoto: licenseBase64,
-                    signature: signatureCanvas.toDataURL('image/png')
-                });
-            } catch (pdfErr) {
-                console.error('PDF 生成失敗', pdfErr);
-            }
+            const storeName = document.getElementById('storeName').value;
+            const customerPlate = document.getElementById('customerPlate').value.trim().toUpperCase();
+            const loanerPlate = document.getElementById('loanerPlate').value.trim().toUpperCase();
+            const todayDate = document.getElementById('todayDate').value;
 
-            btn.innerHTML = '<div class="loading-spinner" style="border-left-color:white;margin-right:10px;"></div><span>正在傳送...</span>';
-
-            // 準備發送到 Make.com 的 JSON 資料
             const payload = {
                 userId: document.getElementById('lineUserId').value,
-                date: document.getElementById('todayDate').value,
-                customerPlate: document.getElementById('customerPlate').value.trim().toUpperCase(),
-                loanerPlate: document.getElementById('loanerPlate').value.trim().toUpperCase(),
-                storeName: document.getElementById('storeName').value,
+                date: todayDate,
+                customerPlate,
+                loanerPlate,
+                storeName,
                 submittedAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-                agreementConfirmed: true,
-                pdfBase64: pdfBase64,
-                // 10 項確認條款個別勾選狀態
-                agreements: {
-                    agree1: document.getElementById('agree1').checked,  // 持有有效駕照
-                    agree2: document.getElementById('agree2').checked,  // 意識清醒未飲酒毒品
-                    agree3: document.getElementById('agree3').checked,  // 僅本人騎乘不得轉借
-                    agree4: document.getElementById('agree4').checked,  // 違規事故責任自負
-                    agree5: document.getElementById('agree5').checked,  // 配合提供資料
-                    agree6: document.getElementById('agree6').checked,  // 借用前確認車況
-                    agree7: document.getElementById('agree7').checked,  // 遵守交通法規
-                    agree8: document.getElementById('agree8').checked,  // 妥善保管鑰匙車輛
-                    agree9: document.getElementById('agree9').checked,  // 按時歸還
-                    agree10: document.getElementById('agree10').checked // 已上傳駕照資料屬實
-                }
+                pdfBase64: photoBase64   // Make.com 用 toBinary(1.pdfBase64; "base64") 上傳
             };
+
             try {
-                // 發送到主 Webhook（包含 PDF base64）
-                const payloadStr = JSON.stringify(payload);
-                console.log('[DEBUG] 傳送資料大小:', Math.round(payloadStr.length / 1024), 'KB');
                 const response = await fetch(MAKE_WEBHOOK_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: payloadStr
+                    body: JSON.stringify(payload)
                 });
-                console.log('[DEBUG] 回應狀態:', response.status);
-                if (response.ok) {
-                    // 成功後隱藏表單，顯示成功訊息
-                    document.getElementById('form-container').classList.add('hidden');
-                    document.getElementById('success-container').classList.remove('hidden');
-                } else {
-                    const respText = await response.text().catch(() => '');
-                    console.error('[DEBUG] 錯誤內容:', respText);
-                    alert('傳送失敗 (HTTP ' + response.status + ')。\n' + respText.substring(0, 150));
-                    btn.disabled = false;
-                    btn.innerHTML = originalContent;
+
+                if (!response.ok) throw new Error('Webhook Error');
+
+                // ── 透過 LIFF 發送卡片確認訊息給客人 ──
+                if (liff.isInClient()) {
+                    try {
+                        await liff.sendMessages([
+                            buildConfirmFlexMessage(customerPlate, loanerPlate, storeName, todayDate)
+                        ]);
+                    } catch (msgErr) {
+                        // 若 sendMessages 失敗（例如權限），不中斷整體流程
+                        console.warn('sendMessages 失敗', msgErr);
+                    }
                 }
+
+                document.getElementById('form-container').classList.add('hidden');
+                document.getElementById('success-container').classList.remove('hidden');
+
             } catch (error) {
-                console.error('[DEBUG] fetch 例外:', error);
-                const size = Math.round(JSON.stringify(payload).length / 1024);
-                alert('網路錯誤：' + error.message + '\n資料大小：' + size + ' KB');
+                alert('系統傳送失敗，請確認網路連線或稍後再試。');
                 btn.disabled = false;
                 btn.innerHTML = originalContent;
             }
         });
+
+        // ── 建立 Flex Message 卡片 ──
+        function buildConfirmFlexMessage(customerPlate, loanerPlate, storeName, date) {
+            return {
+                type: 'flex',
+                altText: '✅ 代步車借出登記完成',
+                contents: {
+                    type: 'bubble',
+                    size: 'mega',
+                    header: {
+                        type: 'box',
+                        layout: 'vertical',
+                        backgroundColor: '#2563EB',
+                        paddingAll: 'lg',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: '✅ 代步車借出登記完成',
+                                color: '#FFFFFF',
+                                weight: 'bold',
+                                size: 'lg',
+                                wrap: true
+                            }
+                        ]
+                    },
+                    body: {
+                        type: 'box',
+                        layout: 'vertical',
+                        spacing: 'md',
+                        paddingAll: 'lg',
+                        contents: [
+                            buildRow('📅 登記日期', date),
+                            buildRow('🚗 原車車牌', customerPlate),
+                            buildRow('🔑 代步車車牌', loanerPlate),
+                            buildRow('🏪 取車店家', storeName),
+                            {
+                                type: 'separator',
+                                margin: 'md',
+                                color: '#E5E7EB'
+                            },
+                            {
+                                type: 'box',
+                                layout: 'horizontal',
+                                margin: 'md',
+                                spacing: 'sm',
+                                contents: [
+                                    {
+                                        type: 'text',
+                                        text: '🔒',
+                                        size: 'sm',
+                                        flex: 0
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: '證件照片僅用於借用代步車之身份確認，完成後即予以刪除，請安心。',
+                                        size: 'xs',
+                                        color: '#6B7280',
+                                        wrap: true,
+                                        flex: 1
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    footer: {
+                        type: 'box',
+                        layout: 'vertical',
+                        paddingAll: 'md',
+                        backgroundColor: '#F9FAFB',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: '如有疑問請洽門市人員',
+                                size: 'xs',
+                                color: '#9CA3AF',
+                                align: 'center'
+                            }
+                        ]
+                    }
+                }
+            };
+        }
+
+        function buildRow(label, value) {
+            return {
+                type: 'box',
+                layout: 'horizontal',
+                spacing: 'sm',
+                contents: [
+                    {
+                        type: 'text',
+                        text: label,
+                        size: 'sm',
+                        color: '#6B7280',
+                        flex: 3,
+                        wrap: true
+                    },
+                    {
+                        type: 'text',
+                        text: value,
+                        size: 'sm',
+                        color: '#111827',
+                        weight: 'bold',
+                        flex: 4,
+                        align: 'end',
+                        wrap: true
+                    }
+                ]
+            };
+        }
+
+        window.onload = initializeLiff;
     </script>
 </body>
 </html>
