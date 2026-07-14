@@ -474,26 +474,36 @@
                 return;
             }
 
-            const payload = {
-                userId: document.getElementById('lineUserId').value,
-                date: todayDate,
-                customerPlate,
-                loanerPlate,
-                storeName,
-                submittedAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-                pdfBase64: contractPdfBase64,  // PDF 合約 base64 → Dropbox
-                agreementConfirmed: true,
-                agreements: {
-                    agree1: true, agree2: true, agree3: true, agree4: true, agree5: true,
-                    agree6: true, agree7: true, agree8: true, agree9: true, agree10: true
-                }
-            };
+            // base64 → Blob（真正的 binary）
+            function base64ToBlob(b64, mime) {
+                const bin = atob(b64);
+                const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                return new Blob([bytes], { type: mime });
+            }
+            const pdfBlob = base64ToBlob(contractPdfBase64, 'application/pdf');
+
+            // 用 FormData 送出（Make.com 直接收到 binary，不需 toBinary()）
+            const submittedAt = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+            const payload = new FormData();
+            payload.append('userId', document.getElementById('lineUserId').value);
+            payload.append('date', todayDate);
+            payload.append('customerPlate', customerPlate);
+            payload.append('loanerPlate', loanerPlate);
+            payload.append('storeName', storeName);
+            payload.append('submittedAt', submittedAt);
+            payload.append('agree1', 'true'); payload.append('agree2', 'true');
+            payload.append('agree3', 'true'); payload.append('agree4', 'true');
+            payload.append('agree5', 'true'); payload.append('agree6', 'true');
+            payload.append('agree7', 'true'); payload.append('agree8', 'true');
+            payload.append('agree9', 'true'); payload.append('agree10', 'true');
+            payload.append('pdfFile', pdfBlob, `${todayDate}_${customerPlate}.pdf`);
 
             try {
                 const response = await fetch(MAKE_WEBHOOK_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    // 不設 Content-Type，讓瀏覽器自動加 multipart/form-data + boundary
+                    body: payload
                 });
 
                 if (!response.ok) throw new Error('Webhook Error');
