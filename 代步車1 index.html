@@ -6,6 +6,8 @@
     <title>代步車借出登記系統</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body {
             background-color: #f3f4f6;
@@ -223,8 +225,9 @@
         const MY_LIFF_ID = '2009551033-j7lWjkjJ';
         const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/qdlgd8r67hh42uxq99z1cjmw2tp3neyq';
 
-        let photoBase64 = null; // 儲存 raw base64（不含 data URL 前綴）
-        let signatureBase64 = null; // 簽名 base64
+        let photoBase64 = null;    // raw base64（不含前綴，送 Make.com）
+        let photoDataUrl = null;   // 完整 data URL（用於 PDF 嵌入）
+        let signatureBase64 = null; // 簽名完整 data URL（canvas.toDataURL）
         let isSigning = false;
 
         // ── LIFF 初始化 ──
@@ -335,8 +338,8 @@
 
             // 壓縮圖片再轉 base64
             compressAndConvert(file, (base64) => {
-                // 去掉 data:image/...;base64, 前綴，Make.com toBinary() 需要純 base64
-                photoBase64 = base64.split(',')[1];
+                photoDataUrl = base64;                // 完整 data URL，供 PDF 嵌入用
+                photoBase64 = base64.split(',')[1];   // 純 base64，不含前綴
                 const previewImg = document.getElementById('preview-img');
                 const placeholder = document.getElementById('upload-placeholder');
                 const uploadArea = document.getElementById('photo-upload-area');
@@ -371,6 +374,65 @@
             reader.readAsDataURL(file);
         }
 
+        // ── 生成 PDF 合約 ──
+        async function generateContractPDF(storeName, customerPlate, loanerPlate, date) {
+            const { jsPDF } = window.jspdf;
+
+            // 建立隱藏的合約 HTML 容器
+            const div = document.createElement('div');
+            div.style.cssText = 'width:700px;padding:48px;font-family:"Microsoft JhengHei","PingFang TC",Arial,sans-serif;background:#fff;position:fixed;left:-9999px;top:0;font-size:14px;line-height:1.8;color:#1a1a1a;';
+            div.innerHTML = `
+              <h2 style="text-align:center;color:#1a56db;font-size:22px;margin:0 0 4px;">${storeName}</h2>
+              <p style="text-align:center;font-size:16px;margin:0 0 16px;color:#333;">代步車借出合約書</p>
+              <hr style="border:2px solid #1a56db;margin-bottom:20px;">
+              <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+                <tr><td style="padding:8px 12px;background:#f0f4ff;font-weight:bold;border:1px solid #ccc;width:45%;">登記日期</td><td style="padding:8px 12px;border:1px solid #ccc;">${date}</td></tr>
+                <tr><td style="padding:8px 12px;background:#f0f4ff;font-weight:bold;border:1px solid #ccc;">客戶車牌（原車）</td><td style="padding:8px 12px;border:1px solid #ccc;">${customerPlate}</td></tr>
+                <tr><td style="padding:8px 12px;background:#f0f4ff;font-weight:bold;border:1px solid #ccc;">借出代步車車牌</td><td style="padding:8px 12px;border:1px solid #ccc;">${loanerPlate}</td></tr>
+              </table>
+              <h4 style="color:#1a56db;margin:0 0 8px;font-size:15px;">借用條款確認（本人已逐條詳閱並同意）</h4>
+              <div style="font-size:13px;color:#222;line-height:2;">
+                <div>✓ 1. 我已確認本人持有有效機車駕照，且駕照未遭吊扣、吊銷或註銷。</div>
+                <div>✓ 2. 本人目前意識清醒，未飲酒、未施用毒品、藥物或其他足以影響安全駕駛之物品。</div>
+                <div>✓ 3. 本人確認借用代步車期間，僅限本人親自騎乘使用，不得轉借、交由他人騎乘或提供無照者使用。</div>
+                <div>✓ 4. 借用期間如有違規、事故、罰款、扣車、抬車、毒駕、酒駕、拖吊、保管、車損、第三人損害責任，均由本人自行負責，與出借車輛之車行無關。</div>
+                <div>✓ 5. 若有新單移轉、事故處理、警方調查、保險理賠或相關行政程序需求，本人願配合提供身分資料、駕照資料及相關文件。</div>
+                <div>✓ 6. 本人借用前已確認代步車外觀與基本車況，若有異常應於借用前主動告知店家；借用後產生之新增損壞，應由本人負責。</div>
+                <div>✓ 7. 本人應遵守交通法規，並依正常方式使用代步車，不得競速、改裝、載運危險物品、超載、違規停放或從事非一般代步用途。</div>
+                <div>✓ 8. 本人應妥善保管代步車鑰匙與車輛，若有遺失、失竊、毀損或其他損害，願負責相關修復、補發、拖吊或處理費用。</div>
+                <div>✓ 9. 本人同意於約定時間內歸還代步車，若逾期未還，願配合店家聯繫並負擔因此產生之相關費用或損害。</div>
+                <div>✓ 10. 本人已上傳駕照正面照片，並確認所提供資料均為本人真實資料，若有不實，願自負相關法律責任。</div>
+              </div>
+              <div style="display:flex;gap:32px;margin-top:24px;">
+                <div style="flex:1;">
+                  <p style="font-weight:bold;font-size:14px;margin:0 0 8px;">駕照正面</p>
+                  <img src="${photoDataUrl}" style="max-width:240px;max-height:170px;border:1px solid #ccc;display:block;">
+                </div>
+                <div style="flex:1;">
+                  <p style="font-weight:bold;font-size:14px;margin:0 0 8px;">本人簽名</p>
+                  <img src="${signatureBase64}" style="max-width:240px;max-height:170px;border:1px solid #ccc;display:block;">
+                </div>
+              </div>`;
+
+            document.body.appendChild(div);
+
+            try {
+                const canvas = await html2canvas(div, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
+                document.body.removeChild(div);
+
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfW = pdf.internal.pageSize.getWidth();
+                const pdfH = (canvas.height * pdfW) / canvas.width;
+                pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pdfW, pdfH);
+
+                // 回傳純 base64（不含前綴）
+                return pdf.output('datauristring').split(',')[1];
+            } catch (err) {
+                if (document.body.contains(div)) document.body.removeChild(div);
+                throw err;
+            }
+        }
+
         // ── 表單提交 ──
         const form = document.getElementById('reservationForm');
         form.addEventListener('submit', async (e) => {
@@ -400,6 +462,18 @@
             const loanerPlate = document.getElementById('loanerPlate').value.trim().toUpperCase();
             const todayDate = document.getElementById('todayDate').value;
 
+            // 生成合約 PDF（含條款、照片、簽名）
+            let contractPdfBase64;
+            try {
+                contractPdfBase64 = await generateContractPDF(storeName, customerPlate, loanerPlate, todayDate);
+            } catch (pdfErr) {
+                console.error('PDF 生成失敗', pdfErr);
+                alert('PDF 合約生成失敗，請稍後再試。');
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                return;
+            }
+
             const payload = {
                 userId: document.getElementById('lineUserId').value,
                 date: todayDate,
@@ -407,8 +481,7 @@
                 loanerPlate,
                 storeName,
                 submittedAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-                pdfBase64: photoBase64,   // Make.com 用 toBinary(1.pdfBase64; "base64") 上傳
-                signatureBase64: signatureBase64,  // 手寫簽名（完整 data URL）
+                pdfBase64: contractPdfBase64,  // PDF 合約 base64 → Dropbox
                 agreementConfirmed: true,
                 agreements: {
                     agree1: true, agree2: true, agree3: true, agree4: true, agree5: true,
@@ -481,33 +554,6 @@
                             buildRow('🚗 原車車牌', customerPlate),
                             buildRow('🔑 代步車車牌', loanerPlate),
                             buildRow('🏪 取車店家', storeName),
-                            {
-                                type: 'separator',
-                                margin: 'md',
-                                color: '#E5E7EB'
-                            },
-                            {
-                                type: 'box',
-                                layout: 'horizontal',
-                                margin: 'md',
-                                spacing: 'sm',
-                                contents: [
-                                    {
-                                        type: 'text',
-                                        text: '🔒',
-                                        size: 'sm',
-                                        flex: 0
-                                    },
-                                    {
-                                        type: 'text',
-                                        text: '證件照片僅用於借用代步車之身份確認，完成後即予以刪除，請安心。',
-                                        size: 'xs',
-                                        color: '#6B7280',
-                                        wrap: true,
-                                        flex: 1
-                                    }
-                                ]
-                            }
                         ]
                     },
                     footer: {
