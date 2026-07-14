@@ -224,6 +224,7 @@
     <script>
         const MY_LIFF_ID = '2009551033-j7lWjkjJ';
         const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/qdlgd8r67hh42uxq99z1cjmw2tp3neyq';
+        const DROPBOX_ACCESS_TOKEN = 'sl.u.AGnU8Mky4SMqG8of7KGkKXQau5UbTf0DLNm9CjNMyvjlWzGKk3AAu7-I86fC5zN2n9ocApwXlzJCQPyfVVCawDUskrurPI5DpRz2lmXNGDLN8KNjIqnYX2jtSxX5sLfby0CV-fHcHKdEY2AcZhq9Up_1oREXtQANIdhf4kR7TfxEfV1jSu9h-ERMYnWHyH7Aqf3_od9pbZPpZyXKt3SLkSDPKlROfbSwZcAFY8B6iMuSBOcsuOaesq2BWwLrVPI7N3p9FAYxdRcrujNfYP29s3ciDAW5mozTjC4befZYgwQEvqU-jE-WnU0cvKvidwLlHL7bsVifcbzreBLonC7VgFQsd4KyrfVZoVnVZ1hj2YUIweSLhZP396WYR_sGDdTJZpH3Q5hKYMU3rtA37TTJF3tPiCtci1DTt7LXmhZTVGzRWaFx66lDioTXAXQEcv6wch40gxz3OYUr0szm9tvrxTpGdVyUSZIRq-q59ncxlDBhm5pMJcE4Ptih1_pWWkVBHUGQuFUBQVuZvkS3pc0RIynLwUbyrOB43f_PNNC6KzVJF-3xYlvb4TiHSG1FClPpzrWeFyhANBzUK629t2PtAy_hQ8Bo9Ms2f-1FCy9KZ7qEoD7bPJBnRKAlSuqJyjLwYijb-aXnMKmmbXw_Xi_b3yV53tNUu6FFugJIq4mL7_nNBX7SBI2q7Dt-oiw_taEnjYdVneA2HsQOOV6ImFjG7aDHB4oXomNCwCV-iRQNzUEroRPNqFx5lymmHxH6ulnPKPztmT00Om84IJa7lEoOpYupUezlGvKdknBoAOPydIV5vanpABeBaIsI4vVP7IMBrfJNY8qjUm3hFMS6BuV9ScaP-AgCPB2s9_zcz6jIG1gly5lgt06wNA3cKTjNYjHI0E2YmZhIW-OI7Wx2dr1Q7nWVT7V4aVO5rEMk3kO-tGvvl-Z2xkCIOip6tiAO4pNCRhDTXDGoPfTdavP-XBqDzQ4SD7buFKnH07cIBVRDlcMTotRs9529NP1ixnTaOjgLhqZ8tplvMLEF4d8SESkNpvg2fvVTdfJLybaS1KdHC0Wpa5t9Vv0YpKIQx2canZ8LObLELHcbauiu4p-IArov8Yil-cNwFviPuJK2pMjTqmbcMMPkiPkquL1BontY5OG-aS8lCQlQI74SNT7JS2_KvMyJUICErMdaEOiI8EIxpVyjli7krjUtU7rrK_upnKeEun1BFwYaYsssiaJt6_xI457CKBNmkMoHLRN8w4tVckzuxj459yMau5lN45RS7oehtohfihg1iepaB5915FW5Lgd8DoVBKpflyLY3nLTk8qNREL5ihEzea2uXTK0MiRfstZwylzw3EcmW1CKIUmLi2jmUP155hkGk6Uqql2EPW93n7crlCgYICvYfbjuKmaplFna3W72BbbQMN6mqSD1dr9bh18bc8vfdprL7za0gctqXR3wzSdIL6UZAdhaOQ8Ug-GbOEabpB0C0Pry8ytQcLQc3';
 
         let photoBase64 = null;    // raw base64（不含前綴，送 Make.com）
         let photoDataUrl = null;   // 完整 data URL（用於 PDF 嵌入）
@@ -483,27 +484,65 @@
             }
             const pdfBlob = base64ToBlob(contractPdfBase64, 'application/pdf');
 
-            // 用 FormData 送出（Make.com 直接收到 binary，不需 toBinary()）
+            // 直接從瀏覽器上傳 PDF 到 Dropbox，再送 JSON 到 Make.com
             const submittedAt = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
-            const payload = new FormData();
-            payload.append('userId', document.getElementById('lineUserId').value);
-            payload.append('date', todayDate);
-            payload.append('customerPlate', customerPlate);
-            payload.append('loanerPlate', loanerPlate);
-            payload.append('storeName', storeName);
-            payload.append('submittedAt', submittedAt);
-            payload.append('agree1', 'true'); payload.append('agree2', 'true');
-            payload.append('agree3', 'true'); payload.append('agree4', 'true');
-            payload.append('agree5', 'true'); payload.append('agree6', 'true');
-            payload.append('agree7', 'true'); payload.append('agree8', 'true');
-            payload.append('agree9', 'true'); payload.append('agree10', 'true');
-            payload.append('pdfFile', pdfBlob, `${todayDate}_${customerPlate}.pdf`);
+            const dropboxPath = `/代步車PDF合約/${todayDate}_${customerPlate}.pdf`;
 
             try {
+                // Step 1: 上傳 PDF 到 Dropbox（瀏覽器直接呼叫 Dropbox API）
+                const uploadResp = await fetch('https://content.dropboxapi.com/2/files/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${DROPBOX_ACCESS_TOKEN}`,
+                        'Content-Type': 'application/octet-stream',
+                        'Dropbox-API-Arg': JSON.stringify({
+                            path: dropboxPath,
+                            mode: 'add',
+                            autorename: true
+                        })
+                    },
+                    body: pdfBlob
+                });
+                if (!uploadResp.ok) throw new Error('Dropbox 上傳失敗: ' + await uploadResp.text());
+                const uploadData = await uploadResp.json();
+
+                // Step 2: 建立 Dropbox 分享連結
+                const shareResp = await fetch('https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${DROPBOX_ACCESS_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        path: uploadData.path_display,
+                        settings: { access: 'viewer', allow_download: true, requested_visibility: 'public' }
+                    })
+                });
+                const shareData = await shareResp.json();
+                let dropboxUrl;
+                if (!shareResp.ok) {
+                    if (shareData.error && shareData.error['.tag'] === 'shared_link_already_exists') {
+                        dropboxUrl = shareData.error.metadata.url.replace('dl=0', 'dl=1');
+                    } else {
+                        throw new Error('Dropbox 分享連結失敗');
+                    }
+                } else {
+                    dropboxUrl = shareData.url.replace('dl=0', 'dl=1');
+                }
+
+                // Step 3: 送出 JSON 到 Make.com（只有文字 + Dropbox 連結，不含 binary）
                 const response = await fetch(MAKE_WEBHOOK_URL, {
                     method: 'POST',
-                    // 不設 Content-Type，讓瀏覽器自動加 multipart/form-data + boundary
-                    body: payload
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: document.getElementById('lineUserId').value,
+                        date: todayDate,
+                        customerPlate, loanerPlate, storeName, submittedAt,
+                        dropboxUrl,
+                        agree1: 'true', agree2: 'true', agree3: 'true', agree4: 'true',
+                        agree5: 'true', agree6: 'true', agree7: 'true', agree8: 'true',
+                        agree9: 'true', agree10: 'true'
+                    })
                 });
 
                 if (!response.ok) throw new Error('Webhook Error');
