@@ -64,6 +64,20 @@
         #upload-placeholder {
             pointer-events: none;
         }
+
+        /* 簽名畫布 */
+        #signature-canvas {
+            border: 2px solid #d1d5db;
+            border-radius: 0.75rem;
+            cursor: crosshair;
+            touch-action: none;
+            display: block;
+            background: #fff;
+            width: 100%;
+        }
+        #signature-canvas.signed {
+            border-color: #16a34a;
+        }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
@@ -119,7 +133,26 @@
                     </select>
                 </div>
 
-                <!-- 5. 證件拍照上傳 -->
+                <!-- 5. 借用條款確認 -->
+                <div>
+                    <div class="bg-blue-600 text-white text-sm font-bold px-4 py-2 rounded-t-lg">
+                        借用條款確認（本人已逐條詳閱並同意）
+                    </div>
+                    <div class="border border-blue-200 rounded-b-lg p-3 space-y-2 bg-white text-sm text-gray-700">
+                        <div class="flex gap-2"><span class="text-blue-600 font-bold flex-shrink-0">✓</span><span>1. 我已確認本人持有有效機車駕照，且駕照未遭吊扣、吊銷或註銷。</span></div>
+                        <div class="flex gap-2"><span class="text-blue-600 font-bold flex-shrink-0">✓</span><span>2. 本人目前意識清醒，未飲酒、未施用毒品、藥物或其他足以影響安全駕駛之物品。</span></div>
+                        <div class="flex gap-2"><span class="text-blue-600 font-bold flex-shrink-0">✓</span><span>3. 本人確認借用代步車期間，僅限本人親自騎乘使用，不得轉借、交由他人騎乘或提供無照者使用。</span></div>
+                        <div class="flex gap-2"><span class="text-blue-600 font-bold flex-shrink-0">✓</span><span>4. 借用期間如有違規、事故、罰款、扣車、抬車、毒駕、酒駕、拖吊、保管、車損、第三人損害責任，均由本人自行負責，與出借車輛之車行無關。</span></div>
+                        <div class="flex gap-2"><span class="text-blue-600 font-bold flex-shrink-0">✓</span><span>5. 若有新單移轉、事故處理、警方調查、保險理賠或相關行政程序需求，本人願配合提供身分資料、駕照資料及相關文件。</span></div>
+                        <div class="flex gap-2"><span class="text-blue-600 font-bold flex-shrink-0">✓</span><span>6. 本人借用前已確認代步車外觀與基本車況，若有異常應於借用前主動告知店家；借用後產生之新增損壞，應由本人負責。</span></div>
+                        <div class="flex gap-2"><span class="text-blue-600 font-bold flex-shrink-0">✓</span><span>7. 本人應遵守交通法規，並依正常方式使用代步車，不得競速、改裝、載運危險物品、超載、違規停放或從事非一般代步用途。</span></div>
+                        <div class="flex gap-2"><span class="text-blue-600 font-bold flex-shrink-0">✓</span><span>8. 本人應妥善保管代步車鑰匙與車輛，若有遺失、失竊、毀損或其他損害，願負責相關修復、補發、拖吊或處理費用。</span></div>
+                        <div class="flex gap-2"><span class="text-blue-600 font-bold flex-shrink-0">✓</span><span>9. 本人同意於約定時間內歸還代步車，若逾期未還，願配合店家聯繫並負擔因此產生之相關費用或損害。</span></div>
+                        <div class="flex gap-2"><span class="text-blue-600 font-bold flex-shrink-0">✓</span><span>10. 本人已上傳駕照正面照片，並確認所提供資料均為本人真實資料，若有不實，願自負相關法律責任。</span></div>
+                    </div>
+                </div>
+
+                <!-- 6. 證件拍照上傳 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         證件照片
@@ -147,6 +180,18 @@
                     <!-- 隱藏的 file input，accept 同時允許相機拍攝與相簿 -->
                     <input type="file" id="photoInput" accept="image/*" capture="environment">
                     <p id="photo-error" class="text-xs text-red-500 mt-1 hidden">請上傳證件照片</p>
+                </div>
+
+                <!-- 6. 簽名欄 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        客戶簽名 <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-xs text-gray-400 mb-2">請在下方空白處以手指親筆簽名</p>
+                    <canvas id="signature-canvas" height="140"></canvas>
+                    <p id="sig-error" class="text-xs text-red-500 mt-1 hidden">請完成簽名</p>
+                    <button type="button" id="clearSigBtn"
+                        class="mt-2 text-sm text-gray-500 underline">重新簽名</button>
                 </div>
 
                 <!-- 提交按鈕 -->
@@ -179,6 +224,8 @@
         const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/qdlgd8r67hh42uxq99z1cjmw2tp3neyq';
 
         let photoBase64 = null; // 儲存 raw base64（不含 data URL 前綴）
+        let signatureBase64 = null; // 簽名 base64
+        let isSigning = false;
 
         // ── LIFF 初始化 ──
         async function initializeLiff() {
@@ -208,6 +255,77 @@
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
             document.getElementById('todayDate').value = dateStr;
+            // 等 DOM 渲染完再初始化畫布
+            setTimeout(initSignatureCanvas, 100);
+        }
+
+        // ── 簽名畫布初始化 ──
+        function initSignatureCanvas() {
+            const canvas = document.getElementById('signature-canvas');
+            const ctx = canvas.getContext('2d');
+            // 讓畫布寬度匹配容器
+            canvas.width = canvas.offsetWidth;
+
+            ctx.strokeStyle = '#1e3a5f';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                if (e.touches) {
+                    return {
+                        x: (e.touches[0].clientX - rect.left) * scaleX,
+                        y: (e.touches[0].clientY - rect.top) * scaleY
+                    };
+                }
+                return {
+                    x: (e.clientX - rect.left) * scaleX,
+                    y: (e.clientY - rect.top) * scaleY
+                };
+            }
+
+            function startDraw(e) {
+                e.preventDefault();
+                isSigning = true;
+                const pos = getPos(e);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+            }
+            function draw(e) {
+                e.preventDefault();
+                if (!isSigning) return;
+                const pos = getPos(e);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            }
+            function endDraw(e) {
+                e.preventDefault();
+                if (!isSigning) return;
+                isSigning = false;
+                signatureBase64 = canvas.toDataURL('image/png');
+                canvas.classList.add('signed');
+                document.getElementById('sig-error').classList.add('hidden');
+            }
+
+            // Mouse events
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', endDraw);
+            canvas.addEventListener('mouseleave', endDraw);
+            // Touch events
+            canvas.addEventListener('touchstart', startDraw, { passive: false });
+            canvas.addEventListener('touchmove', draw, { passive: false });
+            canvas.addEventListener('touchend', endDraw, { passive: false });
+
+            // 清除按鈕
+            document.getElementById('clearSigBtn').addEventListener('click', () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                signatureBase64 = null;
+                canvas.classList.remove('signed');
+            });
         }
 
         // ── 圖片選取 & 預覽 ──
@@ -265,6 +383,13 @@
                 return;
             }
 
+            // 驗證簽名
+            if (!signatureBase64) {
+                document.getElementById('sig-error').classList.remove('hidden');
+                document.getElementById('signature-canvas').scrollIntoView({ behavior: 'smooth' });
+                return;
+            }
+
             const btn = document.getElementById('submitBtn');
             const originalContent = btn.innerHTML;
             btn.disabled = true;
@@ -282,7 +407,13 @@
                 loanerPlate,
                 storeName,
                 submittedAt: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-                pdfBase64: photoBase64   // Make.com 用 toBinary(1.pdfBase64; "base64") 上傳
+                pdfBase64: photoBase64,   // Make.com 用 toBinary(1.pdfBase64; "base64") 上傳
+                signatureBase64: signatureBase64,  // 手寫簽名（完整 data URL）
+                agreementConfirmed: true,
+                agreements: {
+                    agree1: true, agree2: true, agree3: true, agree4: true, agree5: true,
+                    agree6: true, agree7: true, agree8: true, agree9: true, agree10: true
+                }
             };
 
             try {
