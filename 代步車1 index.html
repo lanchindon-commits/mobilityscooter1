@@ -224,7 +224,8 @@
     <script>
         const MY_LIFF_ID = '2009551033-j7lWjkjJ';
         const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/qdlgd8r67hh42uxq99z1cjmw2tp3neyq';
-        // PDF 上傳由 Make.com 端處理（Node 7→8→9 上傳至 Notion）
+        const SUPABASE_URL = 'https://hxzdmosganinyhtrswlj.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4emRtb3NnYW5pbnlodHJzd2xqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NjM4MjUsImV4cCI6MjA5ODMzOTgyNX0.78x8GhEP4vqy4rUEVBuihl2JP5u_fLLpKQTgH6wWJWg';
 
         let photoBase64 = null;    // raw base64（不含前綴，送 Make.com）
         let photoDataUrl = null;   // 完整 data URL（用於 PDF 嵌入）
@@ -475,9 +476,41 @@
                 return;
             }
 
-            // PDF base64 直接送 Make.com，由 Make.com 端上傳至 Notion
+            // Step 1: 瀏覽器直接上傳 PDF 到 Supabase Storage
             const submittedAt = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+            const pdfFilename = `${todayDate}_${customerPlate}.pdf`;
 
+            // base64 → Blob
+            const pdfBin = atob(contractPdfBase64);
+            const pdfBytes = new Uint8Array(pdfBin.length);
+            for (let i = 0; i < pdfBin.length; i++) pdfBytes[i] = pdfBin.charCodeAt(i);
+            const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+            let pdfUrl;
+            try {
+                const uploadResp = await fetch(
+                    `${SUPABASE_URL}/storage/v1/object/contracts/${pdfFilename}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/pdf',
+                            'x-upsert': 'true'
+                        },
+                        body: pdfBlob
+                    }
+                );
+                if (!uploadResp.ok) throw new Error('Supabase 上傳失敗: ' + await uploadResp.text());
+                pdfUrl = `${SUPABASE_URL}/storage/v1/object/public/contracts/${pdfFilename}`;
+            } catch (uploadErr) {
+                console.error('PDF 上傳失敗', uploadErr);
+                alert('PDF 上傳失敗，請確認網路連線或稍後再試。');
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                return;
+            }
+
+            // Step 2: 送出 JSON 到 Make.com（只送 URL，不送 base64）
             try {
                 const response = await fetch(MAKE_WEBHOOK_URL, {
                     method: 'POST',
@@ -486,7 +519,7 @@
                         userId: document.getElementById('lineUserId').value,
                         date: todayDate,
                         customerPlate, loanerPlate, storeName, submittedAt,
-                        pdfBase64: contractPdfBase64,
+                        pdfUrl,
                         agree1: 'true', agree2: 'true', agree3: 'true', agree4: 'true',
                         agree5: 'true', agree6: 'true', agree7: 'true', agree8: 'true',
                         agree9: 'true', agree10: 'true'
