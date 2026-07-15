@@ -433,9 +433,9 @@
                 const canvas = await html2canvas(div, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
                 document.body.removeChild(div);
 
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pdfW = pdf.internal.pageSize.getWidth();
-                const pdfH = (canvas.height * pdfW) / canvas.width;
+                const pdfW = 210; // A4 寬度 mm
+                const pdfH = (canvas.height * pdfW) / canvas.width; // 依內容計算高度
+                const pdf = new jsPDF('p', 'mm', [pdfW, pdfH]);
                 pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pdfW, pdfH);
 
                 // 回傳純 base64（不含前綴）
