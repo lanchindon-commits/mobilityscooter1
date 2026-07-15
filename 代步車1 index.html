@@ -405,14 +405,25 @@
                 <div>✓ 9. 本人同意於約定時間內歸還代步車，若逾期未還，願配合店家聯繫並負擔因此產生之相關費用或損害。</div>
                 <div>✓ 10. 本人已上傳駕照正面照片，並確認所提供資料均為本人真實資料，若有不實，願自負相關法律責任。</div>
               </div>
-              <div style="display:flex;gap:32px;margin-top:24px;">
-                <div style="flex:1;">
-                  <p style="font-weight:bold;font-size:14px;margin:0 0 8px;">駕照正面</p>
-                  <img src="${photoDataUrl}" style="max-width:240px;max-height:170px;border:1px solid #ccc;display:block;">
-                </div>
-                <div style="flex:1;">
-                  <p style="font-weight:bold;font-size:14px;margin:0 0 8px;">本人簽名</p>
-                  <img src="${signatureBase64}" style="max-width:240px;max-height:170px;border:1px solid #ccc;display:block;">
+              <div style="border-top:2px dashed #c5cfe8;margin-top:20px;padding-top:16px;">
+                <p style="text-align:center;font-size:12px;color:#7b8fa6;letter-spacing:3px;margin:0 0 16px;">— 簽 署 欄 位 —</p>
+                <div style="display:flex;gap:20px;">
+                  <!-- 證件照片欄 -->
+                  <div style="flex:1;background:#f4f7ff;border:1.5px solid #c5cfe8;border-radius:8px;padding:14px;text-align:center;">
+                    <p style="font-size:12px;color:#1a56db;font-weight:bold;letter-spacing:2px;margin:0 0 10px;">證 件 照 片</p>
+                    <div style="background:#fff;border:1px solid #dde4f0;border-radius:6px;overflow:hidden;width:200px;height:140px;margin:0 auto;display:flex;align-items:center;justify-content:center;">
+                      <img src="${photoDataUrl}" style="width:200px;height:140px;object-fit:cover;display:block;">
+                    </div>
+                    <p style="font-size:10px;color:#aaa;margin:8px 0 0;">僅供身份確認用途</p>
+                  </div>
+                  <!-- 簽名欄 -->
+                  <div style="flex:1;background:#f4f7ff;border:1.5px solid #c5cfe8;border-radius:8px;padding:14px;text-align:center;">
+                    <p style="font-size:12px;color:#1a56db;font-weight:bold;letter-spacing:2px;margin:0 0 10px;">本 人 簽 名</p>
+                    <div style="background:#fff;border:1px solid #dde4f0;border-radius:6px;overflow:hidden;width:200px;height:140px;margin:0 auto;display:flex;align-items:center;justify-content:center;">
+                      <img src="${signatureBase64}" style="width:200px;height:140px;object-fit:contain;display:block;">
+                    </div>
+                    <p style="font-size:10px;color:#aaa;margin:8px 0 0;">簽署日期：${date}</p>
+                  </div>
                 </div>
               </div>`;
 
