@@ -35,7 +35,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
         /* 拍照上傳區塊 */
         #photo-upload-area {
             border: 2px dashed #d1d5db;
@@ -66,7 +65,6 @@
         #upload-placeholder {
             pointer-events: none;
         }
-
         /* 簽名畫布 */
         #signature-canvas {
             border: 2px solid #d1d5db;
@@ -105,13 +103,11 @@
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
     <div id="app" class="w-full max-w-md">
-
         <!-- 載入中遮罩 -->
         <div id="loading-overlay" class="text-center py-10">
             <div class="loading-spinner mx-auto mb-4"></div>
             <p class="text-gray-500">正在安全連線 LINE 系統...</p>
         </div>
-
         <!-- 表單主要內容 -->
         <div id="form-container" class="form-card p-8 hidden">
             <div class="text-center mb-8">
@@ -126,14 +122,12 @@
                     <input type="text" id="lineUserName" name="lineUserName" readonly
                         class="w-full px-4 py-3 rounded-lg border border-gray-200 readonly-input outline-none">
                 </div>
-
                 <!-- 1. 登記日期 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">登記日期</label>
                     <input type="text" id="todayDate" name="todayDate" readonly
                         class="w-full px-4 py-3 rounded-lg border border-gray-200 readonly-input outline-none">
                 </div>
-
                 <!-- 2. 原車車牌（雙格輸入） -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">您的車牌號碼 (原車)</label>
@@ -144,18 +138,29 @@
                     </div>
                     <p class="text-xs text-gray-400 mt-1">格式：英數字－英數字，例如 PHR-1258</p>
                 </div>
-
-                <!-- 3. 代步車車牌（雙格輸入） -->
+                <!-- 3. 代步車車牌（下拉選單） -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">借出之代步車車牌</label>
-                    <div class="flex items-center gap-2">
-                        <input type="text" id="loanerPlate1" maxlength="3" required placeholder="ABC" inputmode="text" style="text-align:center;font-size:1.1rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:12px 8px;border-radius:8px;border:1.5px solid #d1d5db;outline:none;background:#fff;box-sizing:border-box;width:38%;flex-shrink:0;">
-                        <span class="plate-dash">-</span>
-                        <input type="text" id="loanerPlate2" maxlength="4" required placeholder="1234" inputmode="text" style="text-align:center;font-size:1.1rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:12px 8px;border-radius:8px;border:1.5px solid #d1d5db;outline:none;background:#fff;box-sizing:border-box;flex:1;min-width:0;">
-                    </div>
-                    <p class="text-xs text-gray-400 mt-1">格式：英數字－英數字，例如 NFT-0792</p>
+                    <select id="loanerPlate" name="loanerPlate" required
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white text-center font-bold text-lg tracking-widest">
+                        <option value="" disabled selected>請選擇代步車車牌</option>
+                        <option value="501-HVF">501-HVF</option>
+                        <option value="682-GCR">682-GCR</option>
+                        <option value="NFT-0792">NFT-0792</option>
+                        <option value="502-KAB">502-KAB</option>
+                        <option value="535-HXZ">535-HXZ</option>
+                        <option value="193-EYA">193-EYA</option>
+                        <option value="933-EGL">933-EGL</option>
+                        <option value="207-KZB">207-KZB</option>
+                        <option value="AES-0025">AES-0025</option>
+                        <option value="888-CGB">888-CGB</option>
+                        <option value="692-KQG">692-KQG</option>
+                        <option value="011-HZB">011-HZB</option>
+                        <option value="800-KQH">800-KQH</option>
+                        <option value="NYG-1822">NYG-1822</option>
+                        <option value="676-KQJ">676-KQJ</option>
+                    </select>
                 </div>
-
                 <!-- 3b. 代步車公里數 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">代步車公里數 <span class="text-red-500">*</span></label>
@@ -163,7 +168,6 @@
                         placeholder="例如: 12345"
                         class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
                 </div>
-
                 <!-- 4. 店家選擇 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">取車店家</label>
@@ -175,7 +179,6 @@
                         <option value="金力盛">金力盛</option>
                     </select>
                 </div>
-
                 <!-- 5. 借用條款確認 -->
                 <div>
                     <div class="bg-blue-600 text-white text-sm font-bold px-4 py-2 rounded-t-lg">
@@ -194,21 +197,18 @@
                         <div class="flex gap-2"><span class="text-blue-600 font-bold flex-shrink-0">✓</span><span>10. 本人已上傳駕照正面照片，並確認所提供資料均為本人真實資料，若有不實，願自負相關法律責任。</span></div>
                     </div>
                 </div>
-
                 <!-- 6. 證件拍照上傳 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         證件照片
                         <span class="text-red-500">*</span>
                     </label>
-                    <!-- 隱私說明 -->
                     <div class="flex items-start gap-2 mb-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
                         <svg class="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                         </svg>
                         <p class="text-xs text-amber-700">請拍攝<strong>駕照</strong>或<strong>健保卡</strong>，僅用於借用代步車之身份確認，完成後即刪除。</p>
                     </div>
-                    <!-- 拍照區域 -->
                     <div id="photo-upload-area" onclick="document.getElementById('photoInput').click()">
                         <div id="upload-placeholder">
                             <svg class="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,12 +220,10 @@
                         </div>
                         <img id="preview-img" src="" alt="證件預覽">
                     </div>
-                    <!-- 隱藏的 file input，accept 同時允許相機拍攝與相簿 -->
                     <input type="file" id="photoInput" accept="image/*" capture="environment">
                     <p id="photo-error" class="text-xs text-red-500 mt-1 hidden">請上傳證件照片</p>
                 </div>
-
-                <!-- 6. 簽名欄 -->
+                <!-- 7. 簽名欄 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         客戶簽名 <span class="text-red-500">*</span>
@@ -236,7 +234,6 @@
                     <button type="button" id="clearSigBtn"
                         class="mt-2 text-sm text-gray-500 underline">重新簽名</button>
                 </div>
-
                 <!-- 提交按鈕 -->
                 <button type="submit" id="submitBtn"
                     class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 flex justify-center items-center mt-4">
@@ -244,7 +241,6 @@
                 </button>
             </form>
         </div>
-
         <!-- 成功回饋畫面 -->
         <div id="success-container" class="form-card p-8 text-center hidden">
             <div class="mb-4 flex justify-center">
@@ -261,19 +257,16 @@
             </button>
         </div>
     </div>
-
     <script>
         const MY_LIFF_ID = '2009551033-j7lWjkjJ';
         const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/qdlgd8r67hh42uxq99z1cjmw2tp3neyq';
         const SUPABASE_URL = 'https://hxzdmosganinyhtrswlj.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4emRtb3NnYW5pbnlodHJzd2xqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NjM4MjUsImV4cCI6MjA5ODMzOTgyNX0.78x8GhEP4vqy4rUEVBuihl2JP5u_fLLpKQTgH6wWJWg';
-
-        let photoBase64 = null;    // raw base64（不含前綴，送 Make.com）
-        let photoDataUrl = null;   // 完整 data URL（用於 PDF 嵌入）
-        let signatureBase64 = null; // 簽名完整 data URL（canvas.toDataURL）
+        let photoBase64 = null;
+        let photoDataUrl = null;
+        let signatureBase64 = null;
         let isSigning = false;
-
-        // ── 車牌雙格輸入設定 ──
+        // ── 車牌雙格輸入設定（僅用於原車） ──
         function setupPlateInputs(id1, id2) {
             const box1 = document.getElementById(id1);
             const box2 = document.getElementById(id2);
@@ -288,7 +281,6 @@
                 if (e.key === 'Backspace' && this.value === '') box1.focus();
             });
         }
-
         // ── LIFF 初始化 ──
         async function initializeLiff() {
             try {
@@ -311,32 +303,26 @@
                 `;
             }
         }
-
         function setupForm() {
             document.getElementById('loading-overlay').classList.add('hidden');
             document.getElementById('form-container').classList.remove('hidden');
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
             document.getElementById('todayDate').value = dateStr;
-            // 初始化車牌雙格輸入
+            // 原車車牌雙格輸入
             setupPlateInputs('customerPlate1', 'customerPlate2');
-            setupPlateInputs('loanerPlate1', 'loanerPlate2');
             // 等 DOM 渲染完再初始化畫布
             setTimeout(initSignatureCanvas, 100);
         }
-
         // ── 簽名畫布初始化 ──
         function initSignatureCanvas() {
             const canvas = document.getElementById('signature-canvas');
             const ctx = canvas.getContext('2d');
-            // 讓畫布寬度匹配容器
             canvas.width = canvas.offsetWidth;
-
             ctx.strokeStyle = '#1e3a5f';
             ctx.lineWidth = 2.5;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-
             function getPos(e) {
                 const rect = canvas.getBoundingClientRect();
                 const scaleX = canvas.width / rect.width;
@@ -352,7 +338,6 @@
                     y: (e.clientY - rect.top) * scaleY
                 };
             }
-
             function startDraw(e) {
                 e.preventDefault();
                 isSigning = true;
@@ -375,38 +360,29 @@
                 canvas.classList.add('signed');
                 document.getElementById('sig-error').classList.add('hidden');
             }
-
-            // Mouse events
             canvas.addEventListener('mousedown', startDraw);
             canvas.addEventListener('mousemove', draw);
             canvas.addEventListener('mouseup', endDraw);
             canvas.addEventListener('mouseleave', endDraw);
-            // Touch events
             canvas.addEventListener('touchstart', startDraw, { passive: false });
             canvas.addEventListener('touchmove', draw, { passive: false });
             canvas.addEventListener('touchend', endDraw, { passive: false });
-
-            // 清除按鈕
             document.getElementById('clearSigBtn').addEventListener('click', () => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 signatureBase64 = null;
                 canvas.classList.remove('signed');
             });
         }
-
         // ── 圖片選取 & 預覽 ──
         document.getElementById('photoInput').addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (!file) return;
-
-            // 壓縮圖片再轉 base64
             compressAndConvert(file, (base64) => {
-                photoDataUrl = base64;                // 完整 data URL，供 PDF 嵌入用
-                photoBase64 = base64.split(',')[1];   // 純 base64，不含前綴
+                photoDataUrl = base64;
+                photoBase64 = base64.split(',')[1];
                 const previewImg = document.getElementById('preview-img');
                 const placeholder = document.getElementById('upload-placeholder');
                 const uploadArea = document.getElementById('photo-upload-area');
-
                 previewImg.src = base64;
                 previewImg.style.display = 'block';
                 placeholder.style.display = 'none';
@@ -414,8 +390,6 @@
                 document.getElementById('photo-error').classList.add('hidden');
             });
         });
-
-        // 壓縮圖片到最大 1200px，品質 0.75，降低傳輸大小
         function compressAndConvert(file, callback) {
             const reader = new FileReader();
             reader.onload = function (e) {
@@ -436,12 +410,9 @@
             };
             reader.readAsDataURL(file);
         }
-
         // ── 生成 PDF 合約 ──
         async function generateContractPDF(storeName, customerPlate, loanerPlate, loanerMileage, date) {
             const { jsPDF } = window.jspdf;
-
-            // 建立隱藏的合約 HTML 容器
             const div = document.createElement('div');
             div.style.cssText = 'width:700px;padding:48px 56px 80px 56px;font-family:"Microsoft JhengHei","PingFang TC",Arial,sans-serif;background:#fff;position:fixed;left:-9999px;top:0;font-size:14px;line-height:1.8;color:#1a1a1a;';
             div.innerHTML = `
@@ -470,7 +441,6 @@
               <div style="border-top:2px dashed #c5cfe8;margin-top:20px;padding-top:16px;">
                 <p style="text-align:center;font-size:12px;color:#7b8fa6;letter-spacing:3px;margin:0 0 16px;">— 簽 署 欄 位 —</p>
                 <div style="display:flex;gap:20px;">
-                  <!-- 證件照片欄 -->
                   <div style="flex:1;background:#f4f7ff;border:1.5px solid #c5cfe8;border-radius:8px;padding:14px;text-align:center;">
                     <p style="font-size:12px;color:#1a56db;font-weight:bold;letter-spacing:2px;margin:0 0 10px;">證 件 照 片</p>
                     <div style="background:#fff;border:1px solid #dde4f0;border-radius:6px;overflow:hidden;width:200px;height:140px;margin:0 auto;display:flex;align-items:center;justify-content:center;">
@@ -478,7 +448,6 @@
                     </div>
                     <p style="font-size:10px;color:#aaa;margin:8px 0 0;">僅供身份確認用途</p>
                   </div>
-                  <!-- 簽名欄 -->
                   <div style="flex:1;background:#f4f7ff;border:1.5px solid #c5cfe8;border-radius:8px;padding:14px;text-align:center;">
                     <p style="font-size:12px;color:#1a56db;font-weight:bold;letter-spacing:2px;margin:0 0 10px;">本 人 簽 名</p>
                     <div style="background:#fff;border:1px solid #dde4f0;border-radius:6px;overflow:hidden;width:200px;height:140px;margin:0 auto;display:flex;align-items:center;justify-content:center;">
@@ -488,62 +457,46 @@
                   </div>
                 </div>
               </div>`;
-
             document.body.appendChild(div);
-
             try {
                 const canvas = await html2canvas(div, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
                 document.body.removeChild(div);
-
-                const pdfW = 210; // A4 寬度 mm
-                const pdfH = (canvas.height * pdfW) / canvas.width; // 依內容計算高度
+                const pdfW = 210;
+                const pdfH = (canvas.height * pdfW) / canvas.width;
                 const pdf = new jsPDF('p', 'mm', [pdfW, pdfH]);
                 pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pdfW, pdfH);
-
-                // 回傳純 base64（不含前綴）
                 return pdf.output('datauristring').split(',')[1];
             } catch (err) {
                 if (document.body.contains(div)) document.body.removeChild(div);
                 throw err;
             }
         }
-
         // ── 表單提交 ──
         const form = document.getElementById('reservationForm');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-
-            // 驗證照片
             if (!photoBase64) {
                 document.getElementById('photo-error').classList.remove('hidden');
                 document.getElementById('photo-upload-area').scrollIntoView({ behavior: 'smooth' });
                 return;
             }
-
-            // 驗證簽名
             if (!signatureBase64) {
                 document.getElementById('sig-error').classList.remove('hidden');
                 document.getElementById('signature-canvas').scrollIntoView({ behavior: 'smooth' });
                 return;
             }
-
             const btn = document.getElementById('submitBtn');
             const originalContent = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<div class="loading-spinner" style="width:24px;height:24px;border-width:3px;"></div>';
-
             const storeName = document.getElementById('storeName').value;
-            // 合併車牌（固定格式 XXX-XXXX）
             const customerPlate = document.getElementById('customerPlate1').value.trim().toUpperCase()
                 + '-'
                 + document.getElementById('customerPlate2').value.trim().toUpperCase();
-            const loanerPlate = document.getElementById('loanerPlate1').value.trim().toUpperCase()
-                + '-'
-                + document.getElementById('loanerPlate2').value.trim().toUpperCase();
+            // 代步車車牌直接從下拉選單取值
+            const loanerPlate = document.getElementById('loanerPlate').value;
             const loanerMileage = document.getElementById('loanerMileage').value.trim();
             const todayDate = document.getElementById('todayDate').value;
-
-            // 生成合約 PDF（含條款、照片、簽名）
             let contractPdfBase64;
             try {
                 contractPdfBase64 = await generateContractPDF(storeName, customerPlate, loanerPlate, loanerMileage, todayDate);
@@ -554,17 +507,12 @@
                 btn.innerHTML = originalContent;
                 return;
             }
-
-            // Step 1: 瀏覽器直接上傳 PDF 到 Supabase Storage
             const submittedAt = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
             const pdfFilename = `${todayDate}_${customerPlate}.pdf`;
-
-            // base64 → Blob
             const pdfBin = atob(contractPdfBase64);
             const pdfBytes = new Uint8Array(pdfBin.length);
             for (let i = 0; i < pdfBin.length; i++) pdfBytes[i] = pdfBin.charCodeAt(i);
             const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
-
             let pdfUrl;
             try {
                 const uploadResp = await fetch(
@@ -588,8 +536,6 @@
                 btn.innerHTML = originalContent;
                 return;
             }
-
-            // Step 2: 送出 JSON 到 Make.com（只送 URL，不送 base64）
             try {
                 const response = await fetch(MAKE_WEBHOOK_URL, {
                     method: 'POST',
@@ -605,10 +551,7 @@
                         agree9: 'true', agree10: 'true'
                     })
                 });
-
                 if (!response.ok) throw new Error('Webhook Error');
-
-                // ── 透過 LIFF 發送卡片確認訊息給客人 ──
                 if (liff.isInClient()) {
                     try {
                         await liff.sendMessages([
@@ -618,17 +561,14 @@
                         console.warn('sendMessages 失敗', msgErr);
                     }
                 }
-
                 document.getElementById('form-container').classList.add('hidden');
                 document.getElementById('success-container').classList.remove('hidden');
-
             } catch (error) {
                 alert('系統傳送失敗，請確認網路連線或稍後再試。');
                 btn.disabled = false;
                 btn.innerHTML = originalContent;
             }
         });
-
         // ── 建立 Flex Message 卡片 ──
         function buildConfirmFlexMessage(customerPlate, loanerPlate, storeName, date) {
             return {
@@ -683,35 +623,17 @@
                 }
             };
         }
-
         function buildRow(label, value) {
             return {
                 type: 'box',
                 layout: 'horizontal',
                 spacing: 'sm',
                 contents: [
-                    {
-                        type: 'text',
-                        text: label,
-                        size: 'sm',
-                        color: '#6B7280',
-                        flex: 3,
-                        wrap: true
-                    },
-                    {
-                        type: 'text',
-                        text: value,
-                        size: 'sm',
-                        color: '#111827',
-                        weight: 'bold',
-                        flex: 4,
-                        align: 'end',
-                        wrap: true
-                    }
+                    { type: 'text', text: label, size: 'sm', color: '#6B7280', flex: 3, wrap: true },
+                    { type: 'text', text: value, size: 'sm', color: '#111827', weight: 'bold', flex: 4, align: 'end', wrap: true }
                 ]
             };
         }
-
         window.onload = initializeLiff;
     </script>
 </body>
