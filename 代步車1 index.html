@@ -99,16 +99,72 @@
             flex-shrink: 0;
             user-select: none;
         }
-        .plate-prefilled {
-            border-color: #16a34a !important;
-            background-color: #f0fdf4 !important;
+        /* 店家 Banner 按鈕 */
+        .store-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1.5px solid #e5e7eb;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-bottom: 10px;
+            box-sizing: border-box;
         }
-        #plate-prefilled-hint {
-            font-size: 0.75rem;
-            color: #16a34a;
-            margin-top: 0.25rem;
+        .store-btn:active { transform: scale(0.98); }
+        .store-btn.selected {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+        .store-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 20px;
+        }
+        .store-btn.selected .store-icon { background: #2563eb; }
+        .store-text { flex: 1; text-align: left; }
+        .store-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 2px;
+        }
+        .store-btn.selected .store-name { color: #1d4ed8; }
+        .store-addr {
+            font-size: 12px;
+            color: #6b7280;
+            margin: 0;
+        }
+        .store-check {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 1.5px solid #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.15s;
+        }
+        .store-btn.selected .store-check {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+        .check-svg {
+            width: 14px;
+            height: 14px;
             display: none;
         }
+        .store-btn.selected .check-svg { display: block; }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
@@ -146,8 +202,7 @@
                         <span class="plate-dash">-</span>
                         <input type="text" id="customerPlate2" maxlength="4" required placeholder="1234" inputmode="text" style="text-align:center;font-size:1.1rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:12px 8px;border-radius:8px;border:1.5px solid #d1d5db;outline:none;background:#fff;box-sizing:border-box;flex:1;min-width:0;">
                     </div>
-                    <p class="text-xs text-gray-400 mt-1">格式：英數字－英數字，例如 ABC-1234</p>
-                    <p id="plate-prefilled-hint">✓ 已自動帶入您留車登記時的車牌，如有誤可直接修改</p>
+                    <p class="text-xs text-gray-400 mt-1">格式：英數字－英數字，例如 PHR-1258</p>
                 </div>
                 <!-- 3. 代步車車牌（下拉選單） -->
                 <div>
@@ -179,16 +234,35 @@
                         placeholder="例如: 12345"
                         class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
                 </div>
-                <!-- 4. 店家選擇 -->
+                <!-- 4. 店家選擇（Banner 按鈕） -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">取車店家</label>
-                    <select id="storeName" name="storeName" required
-                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white">
-                        <option value="" disabled selected>請選擇店家</option>
-                        <option value="金旺昇">金旺昇</option>
-                        <option value="忍店">忍店</option>
-                        <option value="金力盛">金力盛</option>
-                    </select>
+                    <input type="hidden" id="storeName" name="storeName">
+                    <div id="store-error" class="text-xs text-red-500 mb-2 hidden">請選擇取車店家</div>
+                    <div class="store-btn" onclick="pickStore(this,'金旺昇')">
+                        <div class="store-icon">🏪</div>
+                        <div class="store-text">
+                            <p class="store-name">金旺昇</p>
+                            <p class="store-addr">中正路 833 號</p>
+                        </div>
+                        <div class="store-check"><svg class="check-svg" viewBox="0 0 14 14" fill="none"><polyline points="2,7 6,11 12,3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                    </div>
+                    <div class="store-btn" onclick="pickStore(this,'忍店')">
+                        <div class="store-icon">🔧</div>
+                        <div class="store-text">
+                            <p class="store-name">忍店</p>
+                            <p class="store-addr">福營路 431-8 號</p>
+                        </div>
+                        <div class="store-check"><svg class="check-svg" viewBox="0 0 14 14" fill="none"><polyline points="2,7 6,11 12,3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                    </div>
+                    <div class="store-btn" onclick="pickStore(this,'金力盛')">
+                        <div class="store-icon">⚙️</div>
+                        <div class="store-text">
+                            <p class="store-name">金力盛</p>
+                            <p class="store-addr">新樹路 148 號</p>
+                        </div>
+                        <div class="store-check"><svg class="check-svg" viewBox="0 0 14 14" fill="none"><polyline points="2,7 6,11 12,3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                    </div>
                 </div>
                 <!-- 5. 借用條款確認 -->
                 <div>
@@ -277,11 +351,12 @@
         let photoDataUrl = null;
         let signatureBase64 = null;
         let isSigning = false;
-        // ── 讀取網址參數（從留車注意事項頁面帶車牌過來用） ──
-        function getQueryParam(name) {
-            const params = new URLSearchParams(window.location.search);
-            const v = params.get(name);
-            return v ? v.trim() : null;
+        // ── 店家 Banner 選取 ──
+        function pickStore(el, name) {
+            document.querySelectorAll('.store-btn').forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+            document.getElementById('storeName').value = name;
+            document.getElementById('store-error').classList.add('hidden');
         }
         // ── 車牌雙格輸入設定（僅用於原車） ──
         function setupPlateInputs(id1, id2) {
@@ -297,25 +372,6 @@
             box2.addEventListener('keydown', function (e) {
                 if (e.key === 'Backspace' && this.value === '') box1.focus();
             });
-        }
-        // ── 從網址帶入原車車牌（留車注意事項頁 → 借代步車頁 銜接用） ──
-        function prefillCustomerPlateFromUrl() {
-            const carNo = getQueryParam('car_no');
-            if (!carNo) return;
-            const dashIdx = carNo.indexOf('-');
-            const box1 = document.getElementById('customerPlate1');
-            const box2 = document.getElementById('customerPlate2');
-            if (dashIdx > -1) {
-                box1.value = carNo.slice(0, dashIdx).toUpperCase().slice(0, box1.maxLength);
-                box2.value = carNo.slice(dashIdx + 1).toUpperCase().slice(0, box2.maxLength);
-            } else {
-                box2.value = carNo.toUpperCase().slice(0, box2.maxLength);
-            }
-            if (box1.value || box2.value) {
-                box1.classList.add('plate-prefilled');
-                box2.classList.add('plate-prefilled');
-                document.getElementById('plate-prefilled-hint').style.display = 'block';
-            }
         }
         // ── LIFF 初始化 ──
         async function initializeLiff() {
@@ -347,8 +403,6 @@
             document.getElementById('todayDate').value = dateStr;
             // 原車車牌雙格輸入
             setupPlateInputs('customerPlate1', 'customerPlate2');
-            // 若是從留車注意事項頁面帶網址參數過來，自動帶入車牌
-            prefillCustomerPlateFromUrl();
             // 等 DOM 渲染完再初始化畫布
             setTimeout(initSignatureCanvas, 100);
         }
@@ -513,6 +567,13 @@
         const form = document.getElementById('reservationForm');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            // 驗證店家
+            const storeName = document.getElementById('storeName').value;
+            if (!storeName) {
+                document.getElementById('store-error').classList.remove('hidden');
+                document.querySelector('.store-btn').scrollIntoView({ behavior: 'smooth' });
+                return;
+            }
             if (!photoBase64) {
                 document.getElementById('photo-error').classList.remove('hidden');
                 document.getElementById('photo-upload-area').scrollIntoView({ behavior: 'smooth' });
@@ -527,7 +588,6 @@
             const originalContent = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<div class="loading-spinner" style="width:24px;height:24px;border-width:3px;"></div>';
-            const storeName = document.getElementById('storeName').value;
             const customerPlate = document.getElementById('customerPlate1').value.trim().toUpperCase()
                 + '-'
                 + document.getElementById('customerPlate2').value.trim().toUpperCase();
