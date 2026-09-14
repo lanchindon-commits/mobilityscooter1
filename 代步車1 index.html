@@ -618,7 +618,7 @@
                 return;
             }
             const submittedAt = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
-            const pdfFilename = `${todayDate}_${customerPlate}.pdf`;
+            const pdfFilename = `${todayDate}_${customerPlate}_${Date.now()}.pdf`;
             const pdfBin = atob(contractPdfBase64);
             const pdfBytes = new Uint8Array(pdfBin.length);
             for (let i = 0; i < pdfBin.length; i++) pdfBytes[i] = pdfBin.charCodeAt(i);
@@ -662,15 +662,7 @@
                     })
                 });
                 if (!response.ok) throw new Error('Webhook Error');
-                if (liff.isInClient()) {
-                    try {
-                        await liff.sendMessages([
-                            buildConfirmFlexMessage(customerPlate, loanerPlate, storeName, todayDate)
-                        ]);
-                    } catch (msgErr) {
-                        console.warn('sendMessages 失敗', msgErr);
-                    }
-                }
+                // Flex 卡片改由 Make.com 官方帳號 push，此處不再重複發送
                 document.getElementById('form-container').classList.add('hidden');
                 document.getElementById('success-container').classList.remove('hidden');
             } catch (error) {
@@ -679,69 +671,98 @@
                 btn.innerHTML = originalContent;
             }
         });
-        // ── 建立 Flex Message 卡片 ──
-        function buildConfirmFlexMessage(customerPlate, loanerPlate, storeName, date) {
+        // ── 建立 Flex Message 卡片（單張合併版） ──
+        function buildConfirmFlexMessage(customerPlate, loanerPlate, storeName, date, userName, pdfUrl) {
+            function row(label, value, valueColor) {
+                return {
+                    type: 'box', layout: 'horizontal', paddingTop: 'sm', paddingBottom: 'sm',
+                    contents: [
+                        { type: 'text', text: label, size: 'sm', color: '#888888', flex: 4, wrap: true },
+                        { type: 'text', text: value, size: 'sm', color: valueColor || '#111111', weight: 'bold', flex: 5, align: 'end', wrap: true }
+                    ]
+                };
+            }
+            function sep() {
+                return { type: 'separator', color: '#F0F0F0' };
+            }
             return {
                 type: 'flex',
-                altText: '✅ 代步車借出登記完成',
+                altText: '🛵 代步車出借通知',
                 contents: {
                     type: 'bubble',
                     size: 'mega',
                     header: {
                         type: 'box',
                         layout: 'vertical',
-                        backgroundColor: '#2563EB',
+                        backgroundColor: '#1a56db',
                         paddingAll: 'lg',
                         contents: [
-                            {
-                                type: 'text',
-                                text: '✅ 代步車借出登記完成',
-                                color: '#FFFFFF',
-                                weight: 'bold',
-                                size: 'lg',
-                                wrap: true
-                            }
+                            { type: 'text', text: '🛵 代步車出借通知', color: '#FFFFFF', weight: 'bold', size: 'md' },
+                            { type: 'text', text: `親愛的 ${userName}，以下是您的借車資料`, color: '#FFFFFFBF', size: 'sm', wrap: true, margin: 'xs' }
                         ]
                     },
                     body: {
                         type: 'box',
                         layout: 'vertical',
-                        spacing: 'md',
                         paddingAll: 'lg',
+                        spacing: 'none',
                         contents: [
-                            buildRow('📅 登記日期', date),
-                            buildRow('🚗 原車車牌', customerPlate),
-                            buildRow('🔑 代步車車牌', loanerPlate),
-                            buildRow('🏪 取車店家', storeName),
+                            row('🏍 您的車輛', customerPlate),
+                            sep(),
+                            row('🛵 代步車牌', loanerPlate),
+                            sep(),
+                            row('📅 借出日期', date),
+                            sep(),
+                            row('🏪 出借店家', storeName),
+                            sep(),
+                            row('⛽ 加油提醒', '請加 92 無鉛', '#CC2222'),
+                            {
+                                type: 'box', layout: 'horizontal',
+                                backgroundColor: '#F0F4FF',
+                                cornerRadius: '8px',
+                                paddingAll: '12px',
+                                margin: 'lg',
+                                action: { type: 'uri', uri: pdfUrl },
+                                contents: [
+                                    {
+                                        type: 'box', layout: 'vertical',
+                                        backgroundColor: '#1a56db',
+                                        cornerRadius: '6px',
+                                        width: '36px', height: '36px',
+                                        justifyContent: 'center', alignItems: 'center',
+                                        contents: [
+                                            { type: 'text', text: 'PDF', color: '#FFFFFF', size: 'xxs', weight: 'bold', align: 'center' }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box', layout: 'vertical', margin: 'sm',
+                                        contents: [
+                                            { type: 'text', text: '借車合約（點此查看 PDF）', color: '#1a56db', size: 'sm', weight: 'bold' },
+                                            { type: 'text', text: `${customerPlate}｜${date}`, color: '#888888', size: 'xs' }
+                                        ]
+                                    }
+                                ]
+                            }
                         ]
                     },
                     footer: {
                         type: 'box',
-                        layout: 'vertical',
+                        layout: 'horizontal',
+                        backgroundColor: '#F8F9FA',
                         paddingAll: 'md',
-                        backgroundColor: '#F9FAFB',
+                        spacing: 'sm',
                         contents: [
+                            { type: 'text', text: '📷', size: 'sm' },
                             {
-                                type: 'text',
-                                text: '如有疑問請洽門市人員',
-                                size: 'xs',
-                                color: '#9CA3AF',
-                                align: 'center'
+                                type: 'box', layout: 'vertical',
+                                contents: [
+                                    { type: 'text', text: '您的證件照片已成功上傳', size: 'xs', color: '#555555' },
+                                    { type: 'text', text: '此照片僅用於借用代步車之身份確認', size: 'xs', color: '#888888', wrap: true }
+                                ]
                             }
                         ]
                     }
                 }
-            };
-        }
-        function buildRow(label, value) {
-            return {
-                type: 'box',
-                layout: 'horizontal',
-                spacing: 'sm',
-                contents: [
-                    { type: 'text', text: label, size: 'sm', color: '#6B7280', flex: 3, wrap: true },
-                    { type: 'text', text: value, size: 'sm', color: '#111827', weight: 'bold', flex: 4, align: 'end', wrap: true }
-                ]
             };
         }
         window.onload = initializeLiff;
